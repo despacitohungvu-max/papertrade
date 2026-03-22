@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>PaperTrade Pro v2</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg:#04060a;--s1:#080d14;--s2:#0d1520;--s3:#121e2c;--s4:#182436;
+  --border:#1c2d42;--border2:#243548;
+  --green:#00f0a0;--green2:rgba(0,240,160,.1);--green3:rgba(0,240,160,.05);
+  --red:#ff3d6b;--red2:rgba(255,61,107,.1);--red3:rgba(255,61,107,.05);
+  --gold:#ffb800;--gold2:rgba(255,184,0,.1);
+  --blue:#2d9cff;--blue2:rgba(45,156,255,.1);
+  --purple:#9b6dff;--purple2:rgba(155,109,255,.1);
+  --cyan:#00d4ff;--cyan2:rgba(0,212,255,.1);
+  --orange:#ff6b35;
+  --text:#dde8f5;--muted:#4a6280;--muted2:#7a92aa;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Space Grotesk',sans-serif;
+  --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding-bottom:90px;overflow-x:hidden;}
+
+/* BG TEXTURE */
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 0%,rgba(0,240,160,.04) 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(45,156,255,.04) 0%,transparent 60%);pointer-events:none;z-index:0;}
+
+/* HEADER */
+.hdr{background:rgba(8,13,20,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 16px;position:sticky;top:0;z-index:200;}
+.hdr-inner{max-width:500px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;}
+.logo{font-size:17px;font-weight:700;letter-spacing:-0.5px;}
+.logo .v{color:var(--green);font-size:11px;font-weight:500;vertical-align:super;margin-left:2px;}
+.hdr-nums{display:flex;gap:16px;}
+.hnum{text-align:right;}
+.hnum-val{font-family:var(--mono);font-size:14px;font-weight:600;}
+.hnum-lbl{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+
+/* MAIN */
+.main{max-width:500px;margin:0 auto;padding:16px;position:relative;z-index:1;}
+
+/* TABS */
+.tabs{display:flex;background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:4px;gap:3px;margin-bottom:18px;overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:1;padding:9px 6px;text-align:center;border-radius:11px;font-size:10px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;white-space:nowrap;min-width:56px;letter-spacing:.3px;}
+.tab.on{background:var(--s3);color:var(--text);border:1px solid var(--border2);}
+.panel{display:none;}.panel.on{display:block;}
+
+/* CARD */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px;}
+.card-hd{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.card-hd::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* FORM */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.ff{margin-bottom:10px;}
+.lbl{font-size:10px;font-weight:600;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;display:block;}
+.inp{width:100%;background:var(--s2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 12px;outline:none;transition:border-color .2s;-webkit-appearance:none;}
+.inp:focus{border-color:rgba(0,240,160,.5);}
+.inp option{background:var(--s2);}
+textarea.inp{resize:none;line-height:1.6;}
+
+/* DIR TOGGLE */
+.dirtog{display:flex;gap:8px;margin-bottom:10px;}
+.dirbtn{flex:1;padding:11px;border-radius:9px;border:1px solid var(--border2);background:var(--s2);color:var(--muted2);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;}
+.dirbtn.long.on{background:var(--green2);border-color:var(--green);color:var(--green);}
+.dirbtn.short.on{background:var(--red2);border-color:var(--red);color:var(--red);}
+
+/* RR BOX */
+.rrbox{background:var(--s2);border:1px solid var(--border2);border-radius:9px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.rrbox-l{font-size:11px;color:var(--muted2);}
+.rrbox-r{font-family:var(--mono);font-size:14px;font-weight:600;}
+
+/* BTN */
+.btn{width:100%;padding:14px;border-radius:12px;border:none;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;-webkit-appearance:none;letter-spacing:.3px;}
+.btn:active{transform:scale(.97);}
+.btn-green{background:linear-gradient(135deg,#00c87a,#00f0a0);color:#040a06;}
+.btn-blue{background:linear-gradient(135deg,#1a7aff,#2d9cff);color:#fff;margin-top:8px;}
+.btn-ghost{background:var(--s2);border:1px solid var(--border2);color:var(--muted2);}
+
+/* ══ AI PARSER SECTION ══ */
+.parse-result{background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:16px;margin-top:12px;display:none;}
+.parse-result.show{display:block;}
+.pr-title{font-family:var(--mono);font-size:10px;color:var(--cyan);letter-spacing:2px;margin-bottom:12px;}
+
+/* SCENARIO CARDS */
+.sc-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.sc-card{border-radius:10px;padding:12px;cursor:pointer;transition:all .2s;border:2px solid transparent;}
+.sc-card.bull{background:var(--green3);border-color:rgba(0,240,160,.2);}
+.sc-card.bear{background:var(--red3);border-color:rgba(255,61,107,.2);}
+.sc-card.active-sc{border-color:var(--gold)!important;box-shadow:0 0 12px rgba(255,184,0,.15);}
+.sc-pct{font-family:var(--mono);font-size:20px;font-weight:700;margin-bottom:3px;}
+.sc-card.bull .sc-pct{color:var(--green);}
+.sc-card.bear .sc-pct{color:var(--red);}
+.sc-name{font-size:11px;font-weight:600;margin-bottom:6px;}
+.sc-path{font-family:var(--mono);font-size:9px;color:var(--muted2);line-height:1.6;}
+.sc-status{font-family:var(--mono);font-size:9px;margin-top:6px;padding:2px 6px;border-radius:4px;display:inline-block;}
+.sc-card.bull .sc-status{background:var(--green2);color:var(--green);}
+.sc-card.bear .sc-status{background:var(--red2);color:var(--red);}
+
+/* PARSED SETUPS */
+.setup-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+.setup-item{background:var(--s1);border:1px solid var(--border2);border-radius:10px;padding:12px;border-left:3px solid;}
+.setup-item.long{border-left-color:var(--green);}
+.setup-item.short{border-left-color:var(--red);}
+.si-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.si-name{font-size:12px;font-weight:700;}
+.si-badge{font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:5px;font-weight:600;}
+.si-levels{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+.si-lv{background:var(--s2);border-radius:6px;padding:6px;text-align:center;}
+.si-lv-l{font-size:8px;color:var(--muted);text-transform:uppercase;margin-bottom:2px;}
+.si-lv-v{font-family:var(--mono);font-size:10px;font-weight:500;}
+.btn-use{width:100%;padding:8px;border-radius:7px;border:1px solid var(--border2);background:var(--s3);color:var(--muted2);font-family:var(--sans);font-size:11px;font-weight:600;cursor:pointer;margin-top:8px;transition:all .2s;}
+.btn-use:hover{background:var(--green2);border-color:var(--green);color:var(--green);}
+
+/* ══ PRICE CHECKER ══ */
+.price-check-wrap{background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:16px;margin-bottom:14px;}
+.pc-title{font-family:var(--mono);font-size:9px;color:var(--cyan);letter-spacing:2px;margin-bottom:12px;}
+.pc-input-row{display:flex;gap:8px;margin-bottom:12px;}
+.pc-inp{flex:1;background:var(--s1);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:var(--mono);font-size:16px;font-weight:600;padding:12px 14px;outline:none;-webkit-appearance:none;}
+.pc-inp:focus{border-color:var(--cyan);}
+.btn-check{padding:12px 18px;border-radius:9px;border:none;background:linear-gradient(135deg,#0090cc,#00d4ff);color:#040a0e;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.pc-result{display:none;}
+.pc-result.show{display:block;}
+.pc-zone{border-radius:10px;padding:14px;margin-bottom:8px;}
+.pc-zone.danger{background:rgba(255,61,107,.08);border:1px solid rgba(255,61,107,.2);}
+.pc-zone.safe{background:rgba(0,240,160,.08);border:1px solid rgba(0,240,160,.2);}
+.pc-zone.neutral{background:var(--s1);border:1px solid var(--border);}
+.pc-zone.warning{background:rgba(255,184,0,.08);border:1px solid rgba(255,184,0,.2);}
+.pc-zone-title{font-size:13px;font-weight:700;margin-bottom:6px;}
+.pc-zone.danger .pc-zone-title{color:var(--red);}
+.pc-zone.safe .pc-zone-title{color:var(--green);}
+.pc-zone.warning .pc-zone-title{color:var(--gold);}
+.pc-zone.neutral .pc-zone-title{color:var(--muted2);}
+.pc-zone-desc{font-size:11px;color:var(--muted2);line-height:1.6;}
+
+/* CHECKLIST */
+.checklist{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+.chk-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--s1);border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:all .15s;}
+.chk-item.checked{background:var(--green3);border-color:rgba(0,240,160,.2);}
+.chk-box{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.chk-item.checked .chk-box{background:var(--green);border-color:var(--green);}
+.chk-text{font-size:12px;color:var(--muted2);transition:color .15s;}
+.chk-item.checked .chk-text{color:var(--text);}
+.chk-score{font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:8px;text-align:center;}
+
+/* ══ TRADE CARDS ══ */
+.tc{background:var(--s1);border-radius:var(--radius);padding:16px;margin-bottom:12px;border-left:3px solid;position:relative;}
+.tc.long{border-left-color:var(--green);}
+.tc.short{border-left-color:var(--red);}
+.tc.win{background:linear-gradient(135deg,var(--green3),var(--s1));}
+.tc.loss{background:linear-gradient(135deg,var(--red3),var(--s1));}
+.tc.be{background:linear-gradient(135deg,var(--gold2),var(--s1));}
+.tc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.tc-left{flex:1;}
+.tc-asset{font-size:14px;font-weight:700;}
+.tc-sub{font-size:10px;color:var(--muted2);font-family:var(--mono);margin-top:2px;}
+.tc-right{text-align:right;}
+.tc-pnl{font-family:var(--mono);font-size:15px;font-weight:600;}
+.tc-rr{font-size:10px;color:var(--muted2);font-family:var(--mono);}
+.brow{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.badge{font-family:var(--mono);font-size:9px;font-weight:600;padding:3px 8px;border-radius:5px;}
+.b-open{background:var(--blue2);color:var(--blue);border:1px solid rgba(45,156,255,.2);}
+.b-win{background:var(--green2);color:var(--green);}
+.b-loss{background:var(--red2);color:var(--red);}
+.b-be{background:var(--gold2);color:var(--gold);}
+.b-long{background:var(--green2);color:var(--green);}
+.b-short{background:var(--red2);color:var(--red);}
+.b-sc1{background:var(--blue2);color:var(--blue);}
+.b-sc2{background:var(--purple2);color:var(--purple);}
+.tc-levels{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px;}
+.lvbox{background:var(--s2);border-radius:7px;padding:7px;text-align:center;}
+.lv-l{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+.lv-v{font-family:var(--mono);font-size:11px;font-weight:500;}
+.tc-reason{font-size:11px;color:var(--muted2);line-height:1.55;margin-bottom:10px;font-family:var(--mono);padding:8px;background:var(--s2);border-radius:7px;}
+.close-row{display:flex;gap:8px;align-items:flex-end;border-top:1px solid var(--border);padding-top:12px;}
+.btn-close{padding:10px 14px;border-radius:8px;border:none;font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;-webkit-appearance:none;white-space:nowrap;}
+.btn-cw{background:var(--green2);color:var(--green);border:1px solid rgba(0,240,160,.25);}
+.btn-cl{background:var(--red2);color:var(--red);border:1px solid rgba(255,61,107,.2);}
+.lesson-inp{width:100%;background:var(--s2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:11px;padding:8px 10px;outline:none;resize:none;margin-top:8px;line-height:1.6;}
+.lesson-inp:focus{border-color:rgba(0,240,160,.3);}
+.tc-lesson{font-size:11px;color:var(--muted2);line-height:1.55;padding-top:10px;border-top:1px solid var(--border);font-family:var(--mono);}
+
+/* ══ STATS ══ */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.sbox{background:var(--s1);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+.sbox-val{font-family:var(--mono);font-size:22px;font-weight:600;margin-bottom:4px;}
+.sbox-lbl{font-size:10px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;}
+.sbox-sub{font-size:10px;color:var(--muted);margin-top:3px;font-family:var(--mono);}
+.wr-bar{height:6px;background:var(--s3);border-radius:3px;overflow:hidden;margin:6px 0 3px;}
+.wr-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green),#00c87a);transition:width .8s ease;}
+.quad-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.qbox{border-radius:10px;padding:13px;text-align:center;}
+.qval{font-family:var(--mono);font-size:18px;font-weight:600;margin-bottom:3px;}
+.qlbl{font-size:10px;color:var(--muted2);line-height:1.4;}
+.setup-tbl{width:100%;border-collapse:collapse;}
+.setup-tbl th{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);}
+.setup-tbl td{padding:8px;font-size:11px;font-family:var(--mono);border-bottom:1px solid rgba(28,45,66,.5);}
+.setup-tbl tr:last-child td{border:none;}
+
+/* EXPORT */
+.exp-box{background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:14px;font-family:var(--mono);font-size:11px;color:var(--muted2);line-height:1.8;white-space:pre-wrap;max-height:380px;overflow-y:auto;margin-bottom:10px;}
+.btn-copy{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border2);background:var(--s2);color:var(--text);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;}
+
+/* FILTER */
+.frow{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.fbtn{padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--s2);color:var(--muted2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;}
+.fbtn.on{background:var(--s3);color:var(--text);border-color:rgba(0,240,160,.3);}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty-ico{font-size:36px;margin-bottom:10px;}
+.empty-txt{font-size:13px;line-height:1.6;}
+
+/* TOAST */
+.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--s3);border:1px solid var(--border2);border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:999;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* SCENARIO STATUS PILL */
+.sc-active-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-family:var(--mono);font-size:10px;font-weight:600;background:rgba(255,184,0,.15);color:var(--gold);border:1px solid rgba(255,184,0,.3);margin-bottom:8px;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.tc,.parse-result,.pc-result,.sc-card{animation:fadeUp .3s ease both;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="logo">PAPER TRADE<span class="v">v2</span></div>
+    <div class="hdr-nums">
+      <div class="hnum">
+        <div class="hnum-val" id="h-pnl" style="color:var(--green)">$0</div>
+        <div class="hnum-lbl">Net P&L</div>
+      </div>
+      <div class="hnum">
+        <div class="hnum-val" id="h-wr">—</div>
+        <div class="hnum-lbl">Win Rate</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="tabs">
+    <div class="tab on" onclick="sw('ai')">🤖 AI Parse</div>
+    <div class="tab" onclick="sw('check')">🔍 Kiểm tra</div>
+    <div class="tab" onclick="sw('open')">📂 Mở</div>
+    <div class="tab" onclick="sw('new')">➕ Lệnh</div>
+    <div class="tab" onclick="sw('history')">📋 Sử</div>
+    <div class="tab" onclick="sw('stats')">📊 Stats</div>
+    <div class="tab" onclick="sw('export')">📤 Export</div>
+  </div>
+
+  <!-- ══ AI PARSE ══ -->
+  <div id="p-ai" class="panel on">
+    <div class="card">
+      <div class="card-hd">Paste phân tích từ AI</div>
+      <p style="font-size:12px;color:var(--muted2);line-height:1.7;margin-bottom:12px;">
+        Copy toàn bộ phân tích từ Project AI → Paste vào đây → App tự nhận diện kịch bản, setup, key levels.
+      </p>
+      <textarea class="inp" id="ai-text" rows="6" placeholder="Dán toàn bộ phân tích của AI vào đây...&#10;&#10;Bao gồm: 2 kịch bản, Setup vào lệnh, Alert levels, Key levels..."></textarea>
+      <button class="btn btn-blue" onclick="parseAI()">🤖 Phân tích & Nhận diện</button>
+    </div>
+
+    <div class="parse-result" id="parse-result">
+      <div class="pr-title">KẾT QUẢ NHẬN DIỆN</div>
+
+      <!-- SCENARIOS -->
+      <div style="margin-bottom:14px;">
+        <div class="card-hd">Kịch bản thị trường</div>
+        <div class="sc-wrap" id="sc-wrap"></div>
+        <div style="font-size:11px;color:var(--muted2);">👆 Bấm vào kịch bản đang xảy ra để đánh dấu theo dõi</div>
+      </div>
+
+      <!-- KEY LEVELS -->
+      <div style="margin-bottom:14px;" id="kl-section">
+        <div class="card-hd">Key Levels nhận diện</div>
+        <div id="kl-list"></div>
+      </div>
+
+      <!-- SETUPS -->
+      <div id="setup-section">
+        <div class="card-hd">Setup vào lệnh</div>
+        <div class="setup-list" id="setup-list"></div>
+      </div>
+
+      <!-- CURRENT ANALYSIS META -->
+      <div id="analysis-meta" style="background:var(--s2);border-radius:10px;padding:12px;border:1px solid var(--border2);">
+        <div class="pr-title">BIAS & CONTEXT</div>
+        <div id="meta-content" style="font-size:12px;color:var(--muted2);line-height:1.7;font-family:var(--mono);"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PRICE CHECK ══ -->
+  <div id="p-check" class="panel">
+    <div class="price-check-wrap">
+      <div class="pc-title">Nhập giá hiện tại</div>
+      <div class="pc-input-row">
+        <input class="pc-inp" id="pc-price" type="number" placeholder="68951">
+        <button class="btn-check" onclick="checkPrice()">Kiểm tra</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:0;">Copy giá từ TradingView → Paste vào đây → App so sánh với key levels</div>
+    </div>
+
+    <div class="pc-result" id="pc-result">
+      <div id="pc-zone-display"></div>
+
+      <!-- CHECKLIST -->
+      <div class="card" id="checklist-card" style="display:none;">
+        <div class="card-hd">Checklist vào lệnh</div>
+        <div class="checklist" id="checklist-items"></div>
+        <div class="chk-score" id="chk-score"></div>
+        <button class="btn btn-green" id="btn-from-check" style="margin-top:12px;display:none;" onclick="useChecklistSetup()">✅ Dùng setup này</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ĐANG MỞ ══ -->
+  <div id="p-open" class="panel">
+    <div style="font-size:11px;color:var(--muted2);margin-bottom:12px;padding:10px 12px;background:var(--s1);border-radius:9px;border:1px solid var(--border);">
+      💡 Nhập giá đóng → App tự tính P&L và R:R thực tế
+    </div>
+    <div id="open-list"></div>
+  </div>
+
+  <!-- ══ LỆNH MỚI ══ -->
+  <div id="p-new" class="panel">
+    <div class="card">
+      <div class="card-hd">Thông tin lệnh mới</div>
+      <div class="fg">
+        <div>
+          <label class="lbl">Tài sản</label>
+          <select class="inp" id="f-asset">
+            <option>BTC/USDT</option><option>XAUUSD</option>
+            <option>ETH/USDT</option><option>Khác</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Setup</label>
+          <select class="inp" id="f-setup">
+            <option>OB Retest</option><option>FVG Fill</option>
+            <option>Sweep+Reaction</option><option>AR Short</option>
+            <option>Breakout</option><option>Khác</option>
+          </select>
+        </div>
+      </div>
+      <div class="ff">
+        <label class="lbl">Hướng</label>
+        <div class="dirtog">
+          <div class="dirbtn long on" id="btn-long" onclick="setDir('long')">📈 LONG</div>
+          <div class="dirbtn short" id="btn-short" onclick="setDir('short')">📉 SHORT</div>
+        </div>
+      </div>
+      <div class="fg">
+        <div><label class="lbl">Entry ($)</label><input class="inp" id="f-entry" type="number" placeholder="65500" oninput="calcRR()"></div>
+        <div><label class="lbl">Stop Loss ($)</label><input class="inp" id="f-sl" type="number" placeholder="64300" oninput="calcRR()"></div>
+      </div>
+      <div class="fg">
+        <div><label class="lbl">Take Profit 1 ($)</label><input class="inp" id="f-tp1" type="number" placeholder="69000" oninput="calcRR()"></div>
+        <div><label class="lbl">Take Profit 2 ($)</label><input class="inp" id="f-tp2" type="number" placeholder="70500" oninput="calcRR()"></div>
+      </div>
+      <div class="fg">
+        <div><label class="lbl">Vốn ($)</label><input class="inp" id="f-capital" type="number" placeholder="10000"></div>
+        <div><label class="lbl">Risk (%)</label><input class="inp" id="f-risk" type="number" placeholder="1" oninput="calcRR()"></div>
+      </div>
+      <div class="rrbox">
+        <span class="rrbox-l">R:R ước tính (đến TP2)</span>
+        <span class="rrbox-r" id="rr-val" style="color:var(--muted2)">—</span>
+      </div>
+      <div class="fg">
+        <div><label class="lbl">Tuần / Context</label><input class="inp" id="f-week" type="text" placeholder="Tuần 12/2026"></div>
+        <div>
+          <label class="lbl">Kịch bản</label>
+          <select class="inp" id="f-scenario">
+            <option value="">— Chọn —</option>
+            <option value="sc1">Kịch bản 1</option>
+            <option value="sc2">Kịch bản 2</option>
+          </select>
+        </div>
+      </div>
+      <div class="ff">
+        <label class="lbl">Lý do vào lệnh</label>
+        <textarea class="inp" id="f-reason" rows="3" placeholder="VD: Giá về Bull OB 4H tại $65.5K, nến Hammer 1H, volume 2.3x, funding âm -0.0095%..."></textarea>
+      </div>
+      <button class="btn btn-green" onclick="addTrade()">✅ Thêm Lệnh Mới</button>
+    </div>
+  </div>
+
+  <!-- ══ LỊCH SỬ ══ -->
+  <div id="p-history" class="panel">
+    <div class="frow">
+      <div class="fbtn on" onclick="filterH('all',this)">Tất cả</div>
+      <div class="fbtn" onclick="filterH('win',this)">✅ Thắng</div>
+      <div class="fbtn" onclick="filterH('loss',this)">❌ Thua</div>
+      <div class="fbtn" onclick="filterH('be',this)">⚖️ Hòa</div>
+      <div class="fbtn" onclick="filterH('BTC/USDT',this)">BTC</div>
+      <div class="fbtn" onclick="filterH('XAUUSD',this)">Gold</div>
+    </div>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- ══ STATS ══ -->
+  <div id="p-stats" class="panel">
+    <div id="stats-content"></div>
+  </div>
+
+  <!-- ══ EXPORT ══ -->
+  <div id="p-export" class="panel">
+    <div class="card">
+      <div class="card-hd">Xuất báo cáo cho AI</div>
+      <p style="font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:12px;">Copy báo cáo này và paste vào chat Project AI để nhận phân tích và nhận xét.</p>
+      <div class="exp-box" id="export-text">Chưa có dữ liệu.</div>
+      <button class="btn-copy" onclick="copyExport()">📋 Copy toàn bộ báo cáo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══ STATE ══
+let trades = JSON.parse(localStorage.getItem('pt2_trades')||'[]');
+let currentAnalysis = JSON.parse(localStorage.getItem('pt2_analysis')||'null');
+let direction = 'long';
+let tradeCounter = trades.length>0 ? Math.max(...trades.map(t=>t.id))+1 : 1;
+let activeScenario = localStorage.getItem('pt2_activeSc')||null;
+let checklistSetup = null;
+
+// ══ TABS ══
+function sw(n){
+  const ids=['ai','check','open','new','history','stats','export'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('on',ids[i]===n));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+n));
+  if(n==='open') renderOpen();
+  if(n==='history') renderHistory('all');
+  if(n==='stats') renderStats();
+  if(n==='export') renderExport();
+  if(n==='ai' && currentAnalysis) showParsed();
+}
+
+// ══ AI PARSER ══
+function parseAI(){
+  const text = document.getElementById('ai-text').value.trim();
+  if(!text){showToast('⚠️ Paste phân tích vào trước');return;}
+
+  const analysis = extractAnalysis(text);
+  currentAnalysis = analysis;
+  localStorage.setItem('pt2_analysis', JSON.stringify(analysis));
+  showParsed();
+  showToast('✅ Đã nhận diện xong');
+}
+
+function extractAnalysis(text){
+  const a = {
+    bias:'', meta:'', scenarios:[], setups:[], keyLevels:[], alerts:[], raw:text
+  };
+
+  // BIAS
+  const biasM = text.match(/BIAS[:\s]+([A-ZÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÉÈẸẺẼÊỀẾỆỂỄÍÌỊỈĨÓÒỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÚÙỤỦŨƯỪỨỰỬỮÝỲỴỶỸĐ\s\-\(\)\/→]{3,50})/i);
+  if(biasM) a.bias = biasM[1].trim().slice(0,80);
+
+  // META context — lấy vài dòng đầu
+  const lines = text.split('\n').filter(l=>l.trim());
+  a.meta = lines.slice(0,5).join('\n');
+
+  // SCENARIOS — tìm kịch bản 1 và 2
+  const sc1patterns = [
+    /kịch\s*bản\s*1[^\n]{0,60}\n([\s\S]{20,400}?)(?=kịch\s*bản\s*2|KỊCH|═|$)/i,
+    /scenario\s*1[^\n]{0,60}\n([\s\S]{20,300}?)(?=scenario\s*2|═|$)/i,
+    /k[iị]ch\s*b[aả]n\s*1[\s\S]{0,400}?(?:path|path:|→)[^\n]*/i
+  ];
+  const sc2patterns = [
+    /kịch\s*bản\s*2[^\n]{0,60}\n([\s\S]{20,400}?)(?=kịch\s*bản\s*3|KỊCH|═|INVALID|$)/i,
+    /scenario\s*2[^\n]{0,60}\n([\s\S]{20,300}?)(?=═|INVALID|$)/i,
+  ];
+
+  // Extract %
+  const pct1 = text.match(/kịch\s*bản\s*1[^\n]*?(\d{1,3})\s*%/i);
+  const pct2 = text.match(/kịch\s*bản\s*2[^\n]*?(\d{1,3})\s*%/i);
+  const name1 = text.match(/kịch\s*bản\s*1[^\n]*?[—\-–]\s*[""]?([A-ZÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÉÈẸẺẼÊỀẾỆỂỄÍÌỊỈĨÓÒỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÚÙỤỦŨƯỪỨỰỬỮÝỲỴỶỸĐA-Za-z\s&\/]{3,40})/i);
+  const name2 = text.match(/kịch\s*bản\s*2[^\n]*?[—\-–]\s*[""]?([A-ZÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÉÈẸẺẼÊỀẾỆỂỄÍÌỊỈĨÓÒỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÚÙỤỦŨƯỪỨỰỬỮÝỲỴỶỸĐA-Za-z\s&\/]{3,40})/i);
+
+  // Extract path prices
+  const pathM1 = text.match(/kịch\s*bản\s*1[\s\S]{0,200}?(?:path|path:)[^\n]*/i);
+  const pathM2 = text.match(/kịch\s*bản\s*2[\s\S]{0,200}?(?:path|path:)[^\n]*/i);
+
+  a.scenarios.push({
+    id:'sc1', type:'bull',
+    pct: pct1 ? pct1[1] : '?',
+    name: name1 ? name1[1].trim().slice(0,30) : 'Kịch bản 1',
+    path: pathM1 ? pathM1[0].slice(-100) : 'Xem phân tích'
+  });
+  a.scenarios.push({
+    id:'sc2', type:'bear',
+    pct: pct2 ? pct2[1] : '?',
+    name: name2 ? name2[1].trim().slice(0,30) : 'Kịch bản 2',
+    path: pathM2 ? pathM2[0].slice(-100) : 'Xem phân tích'
+  });
+
+  // KEY LEVELS — tìm $xxx,xxx
+  const priceRe = /\$[\d,]+(?:\.\d+)?[K]?/g;
+  const allPrices = [...new Set(text.match(priceRe)||[])].slice(0,20);
+  a.keyLevels = allPrices;
+
+  // SETUPS — parse format AI thực tế (có ký tự ═══ ├─ └─ │)
+  // Clean text trước: bỏ ký tự box-drawing
+  const cleanText = text.replace(/[═─│├└┌┐┘┤┬┴┼]/g, ' ');
+
+  // Tách thành blocks theo SETUP A / SETUP B / SETUP 1 / SETUP 2
+  // Hỗ trợ nhiều format: "SETUP A —", "SETUP 1 —", "═══ SETUP A", "SETUP A — LONG"
+  const setupBlocks = cleanText.split(/(?=(?:={2,}|)\s*SETUP\s+[AB12]\s*[—\-–|])/i)
+    .filter(b => /SETUP\s+[AB12]/i.test(b))
+    .slice(0, 3);
+
+  const foundSetups = [];
+
+  setupBlocks.forEach((block, i) => {
+    const isLong = /\bLONG\b/i.test(block.slice(0, 200));
+    const isShort = /\bSHORT\b/i.test(block.slice(0, 200));
+    if (!isLong && !isShort) return;
+
+    // Name: lấy dòng tiêu đề setup
+    const nameMatch = block.match(/SETUP\s+[AB12][^\n]{0,80}/i);
+    const name = nameMatch ? nameMatch[0].replace(/[^\w\sÀ-ỹ\-–—\/|%]/g,'').trim() : `Setup ${i+1}`;
+
+    // Priority
+    const prio = block.match(/[Ưư]u\s*ti[eê]n\s*(CAO|TB|TH[AẤ]P|TRUNG\s*B[ÌÍ]NH)/i)?.[1]?.toUpperCase();
+
+    // Entry — hỗ trợ "Vùng entry: $X – $Y" hoặc "Entry: $X"
+    let entry = null;
+    const entryM = block.match(/[Vv][uù]ng\s*entry[:\s]*\$?([\d,\.]+)\s*[–\-–]\s*\$?([\d,\.]+)/i);
+    if (entryM) {
+      // Lấy giá trị giữa 2 mức (trung điểm)
+      const lo = parseFloat(entryM[1].replace(/,/g,''));
+      const hi = parseFloat(entryM[2].replace(/,/g,''));
+      entry = Math.round((lo + hi) / 2).toString();
+    } else {
+      const eM = block.match(/entry[:\s]+\$?([\d,\.]+)/i);
+      entry = eM?.[1]?.replace(/,/g,'');
+    }
+
+    // SL — nhiều format
+    const slM = block.match(/(?:stop\s*loss|SL)[:\s]+\$?([\d,\.]+)/i);
+    const sl = slM?.[1]?.replace(/,/g,'');
+
+    // TP1
+    const tp1M = block.match(/(?:take\s*profit\s*1|TP1)[:\s]+\$?([\d,\.]+)/i);
+    const tp1 = tp1M?.[1]?.replace(/,/g,'');
+
+    // TP2
+    const tp2M = block.match(/(?:take\s*profit\s*2|TP2)[:\s]+\$?([\d,\.]+)/i);
+    const tp2 = tp2M?.[1]?.replace(/,/g,'');
+
+    // R:R — "1:2.5" hoặc "R:R 1:2"
+    const rrM = block.match(/R\s*:\s*R[^\n]*?1\s*:\s*([\d\.]+)/i);
+    const rr = rrM?.[1];
+
+    // Size
+    const sizeM = block.match(/((?:0\.5|1)\s*%\s*v[oố]n)/i);
+    const size = sizeM?.[0];
+
+    foundSetups.push({
+      name: name.trim().slice(0, 60),
+      direction: isLong ? 'long' : 'short',
+      entry, sl, tp1, tp2, rr, size, prio
+    });
+  });
+
+  // Fallback: nếu không tách được block, tìm từng field trực tiếp
+  if (foundSetups.length === 0) {
+    const allSetupHeaders = [...cleanText.matchAll(/SETUP\s+([AB12])[^\n]{0,100}/gi)];
+    allSetupHeaders.slice(0, 3).forEach((m, i) => {
+      const startIdx = m.index;
+      const endIdx = allSetupHeaders[i+1]?.index || startIdx + 800;
+      const block = cleanText.slice(startIdx, endIdx);
+      const isLong = /\bLONG\b/i.test(block.slice(0,200));
+      const isShort = /\bSHORT\b/i.test(block.slice(0,200));
+      if (!isLong && !isShort) return;
+
+      const entryR = block.match(/(?:[Vv][uù]ng\s*)?entry[:\s]+\$?([\d,\.]+)/i)?.[1]?.replace(/,/g,'');
+      const slR = block.match(/(?:stop\s*loss|SL)[:\s]+\$?([\d,\.]+)/i)?.[1]?.replace(/,/g,'');
+      const tp1R = block.match(/(?:take\s*profit\s*1|TP1)[:\s]+\$?([\d,\.]+)/i)?.[1]?.replace(/,/g,'');
+      const tp2R = block.match(/(?:take\s*profit\s*2|TP2)[:\s]+\$?([\d,\.]+)/i)?.[1]?.replace(/,/g,'');
+      const rrR = block.match(/R\s*:\s*R[^\n]*?1\s*:\s*([\d\.]+)/i)?.[1];
+      const sizeR = block.match(/((?:0\.5|1)\s*%\s*v[oố]n)/i)?.[0];
+      const prioR = block.match(/[Ưư]u\s*ti[eê]n\s*(CAO|TB|TH[AẤ]P)/i)?.[1];
+
+      foundSetups.push({
+        name: m[0].slice(0,60).trim(),
+        direction: isLong ? 'long' : 'short',
+        entry: entryR, sl: slR, tp1: tp1R, tp2: tp2R,
+        rr: rrR, size: sizeR, prio: prioR
+      });
+    });
+  }
+
+  a.setups = foundSetups.slice(0, 3);
+
+  // ALERTS
+  const alertRe = /alert\s*\d[^\n]*/gi;
+  const alertM = text.match(alertRe)||[];
+  a.alerts = alertM.slice(0,6).map(a=>a.replace(/[├└│─]/g,'').trim());
+
+  return a;
+}
+
+function showParsed(){
+  if(!currentAnalysis) return;
+  const a = currentAnalysis;
+  const el = document.getElementById('parse-result');
+  el.classList.add('show');
+
+  // SCENARIOS
+  const scWrap = document.getElementById('sc-wrap');
+  scWrap.innerHTML = a.scenarios.map(sc=>`
+    <div class="sc-card ${sc.type} ${activeScenario===sc.id?'active-sc':''}" onclick="setActiveScenario('${sc.id}')">
+      <div class="sc-pct">${sc.pct}%</div>
+      <div class="sc-name">${sc.name}</div>
+      <div class="sc-path">${sc.path.replace(/[├└│─]/g,'').slice(0,100)}</div>
+      <div class="sc-status">${activeScenario===sc.id?'🔥 Đang xảy ra':'Chờ kích hoạt'}</div>
+    </div>
+  `).join('');
+
+  // KEY LEVELS
+  if(a.keyLevels.length>0){
+    document.getElementById('kl-list').innerHTML = `
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${a.keyLevels.map(p=>`<span style="font-family:var(--mono);font-size:11px;padding:4px 8px;background:var(--s2);border:1px solid var(--border2);border-radius:6px;color:var(--muted2);">${p}</span>`).join('')}
+      </div>
+    `;
+  }
+
+  // SETUPS
+  const setupList = document.getElementById('setup-list');
+  if(a.setups.length>0){
+    setupList.innerHTML = a.setups.map((s,i)=>`
+      <div class="setup-item ${s.direction}">
+        <div class="si-top">
+          <div class="si-name">${s.name.slice(0,50)}</div>
+          <span class="si-badge" style="background:${s.direction==='long'?'var(--green2)':'var(--red2)'};color:${s.direction==='long'?'var(--green)':'var(--red)'};">${s.direction.toUpperCase()}${s.prio?' · '+s.prio:''}</span>
+        </div>
+        <div class="si-levels">
+          <div class="si-lv"><div class="si-lv-l">Entry</div><div class="si-lv-v" style="color:var(--text)">${s.entry?'$'+Number(s.entry).toLocaleString():'—'}</div></div>
+          <div class="si-lv"><div class="si-lv-l">SL</div><div class="si-lv-v" style="color:var(--red)">${s.sl?'$'+Number(s.sl).toLocaleString():'—'}</div></div>
+          <div class="si-lv"><div class="si-lv-l">TP1</div><div class="si-lv-v" style="color:var(--gold)">${s.tp1?'$'+Number(s.tp1).toLocaleString():'—'}</div></div>
+          <div class="si-lv"><div class="si-lv-l">TP2</div><div class="si-lv-v" style="color:var(--green)">${s.tp2?'$'+Number(s.tp2).toLocaleString():'—'}</div></div>
+        </div>
+        ${s.rr?`<div style="font-size:10px;color:var(--muted2);font-family:var(--mono);margin-top:6px;">R:R 1:${s.rr}${s.size?' · '+s.size:''}</div>`:''}
+        <button class="btn-use" onclick="useSetup(${i})">📥 Dùng setup này → Tab Lệnh mới</button>
+      </div>
+    `).join('');
+  } else {
+    setupList.innerHTML = `<div style="font-size:12px;color:var(--muted2);padding:12px 0;">Không tìm thấy setup cụ thể. Vui lòng điền thủ công ở tab Lệnh mới.</div>`;
+  }
+
+  // META
+  document.getElementById('meta-content').textContent =
+    (a.bias ? 'BIAS: ' + a.bias + '\n\n' : '') +
+    (a.alerts.length>0 ? 'ALERTS:\n' + a.alerts.join('\n') : '');
+}
+
+function setActiveScenario(id){
+  activeScenario = activeScenario===id ? null : id;
+  localStorage.setItem('pt2_activeSc', activeScenario||'');
+  showParsed();
+  showToast(activeScenario ? '🔥 Đánh dấu kịch bản đang xảy ra' : 'Bỏ đánh dấu kịch bản');
+}
+
+function useSetup(idx){
+  const s = currentAnalysis?.setups?.[idx];
+  if(!s){showToast('⚠️ Không có data setup');return;}
+  direction = s.direction;
+  document.getElementById('btn-long').classList.toggle('on',s.direction==='long');
+  document.getElementById('btn-short').classList.toggle('on',s.direction==='short');
+  if(s.entry) document.getElementById('f-entry').value = s.entry;
+  if(s.sl) document.getElementById('f-sl').value = s.sl;
+  if(s.tp1) document.getElementById('f-tp1').value = s.tp1;
+  if(s.tp2) document.getElementById('f-tp2').value = s.tp2;
+  document.getElementById('f-setup').value = 'OB Retest';
+  calcRR();
+  sw('new');
+  showToast('✅ Đã điền setup vào form');
+}
+
+// ══ PRICE CHECK ══
+function checkPrice(){
+  const price = parseFloat(document.getElementById('pc-price').value);
+  if(!price){showToast('⚠️ Nhập giá hiện tại');return;}
+
+  const res = document.getElementById('pc-result');
+  res.classList.add('show');
+
+  let zoneHTML = '';
+  let chkSetup = null;
+
+  // Check against open trades
+  const openTrades = trades.filter(t=>t.status==='open');
+
+  if(openTrades.length>0){
+    openTrades.forEach(t=>{
+      const isLong = t.direction==='long';
+      const slDist = Math.abs(price - t.sl);
+      const tp1Dist = Math.abs(price - t.tp1);
+      const nearSL = isLong ? price < t.sl + (t.entry-t.sl)*0.3 : price > t.sl - (t.sl-t.entry)*0.3;
+      const nearTP1 = Math.abs(price - t.tp1) / t.tp1 < 0.015;
+
+      if(nearSL){
+        zoneHTML += `<div class="pc-zone danger"><div class="pc-zone-title">⚠️ Lệnh #${t.id} — Gần SL!</div><div class="pc-zone-desc">Giá $${price.toLocaleString()} đang gần Stop Loss $${t.sl.toLocaleString()} của lệnh ${t.direction.toUpperCase()} ${t.asset}. Theo dõi sát.</div></div>`;
+      }
+      if(nearTP1){
+        zoneHTML += `<div class="pc-zone safe"><div class="pc-zone-title">🎯 Lệnh #${t.id} — Sắp TP1!</div><div class="pc-zone-desc">Giá $${price.toLocaleString()} gần đến Take Profit 1 $${t.tp1.toLocaleString()}. Chuẩn bị chốt 50%.</div></div>`;
+      }
+    });
+  }
+
+  // Check against parsed analysis
+  if(currentAnalysis){
+    const a = currentAnalysis;
+
+    // Check setups
+    a.setups.forEach((s,i)=>{
+      if(!s.entry) return;
+      const entry = Number(s.entry);
+      const sl = Number(s.sl)||0;
+      const priceDist = Math.abs(price - entry) / entry;
+
+      if(priceDist < 0.02){
+        zoneHTML += `<div class="pc-zone ${s.direction==='long'?'safe':'danger'}">
+          <div class="pc-zone-title">${s.direction==='long'?'🟢':'🔴'} ĐANG Ở VÙNG ENTRY — ${s.name.slice(0,40)}</div>
+          <div class="pc-zone-desc">Giá $${price.toLocaleString()} đang trong vùng entry của setup này ($${entry.toLocaleString()}). Kiểm tra điều kiện xác nhận!</div>
+        </div>`;
+        chkSetup = s;
+      } else if(priceDist < 0.05){
+        zoneHTML += `<div class="pc-zone warning">
+          <div class="pc-zone-title">🟡 Tiệm cận entry — ${s.name.slice(0,30)}</div>
+          <div class="pc-zone-desc">Giá $${price.toLocaleString()} cách entry $${entry.toLocaleString()} khoảng ${(priceDist*100).toFixed(1)}%. Chuẩn bị theo dõi.</div>
+        </div>`;
+      }
+    });
+
+    // No man's land check
+    const allEntries = a.setups.map(s=>Number(s.entry)).filter(Boolean);
+    const allSLs = a.setups.map(s=>Number(s.sl)).filter(Boolean);
+    const allTPs = a.setups.map(s=>Number(s.tp1)).filter(Boolean).concat(a.setups.map(s=>Number(s.tp2)).filter(Boolean));
+
+    const nearAnyLevel = [...allEntries,...allSLs,...allTPs].some(lv=>Math.abs(price-lv)/price<0.025);
+
+    if(!nearAnyLevel && !zoneHTML){
+      zoneHTML += `<div class="pc-zone neutral"><div class="pc-zone-title">⚪ No Man's Land</div><div class="pc-zone-desc">Giá $${price.toLocaleString()} chưa ở vùng nào có edge kỹ thuật rõ ràng. Không vào lệnh. Chờ giá về vùng Entry hoặc Alert.</div></div>`;
+    }
+  } else {
+    if(!zoneHTML){
+      zoneHTML += `<div class="pc-zone neutral"><div class="pc-zone-title">ℹ️ Chưa có phân tích</div><div class="pc-zone-desc">Paste phân tích từ AI vào tab "AI Parse" trước để app nhận diện vùng giá.</div></div>`;
+    }
+  }
+
+  document.getElementById('pc-zone-display').innerHTML = zoneHTML;
+
+  // Show checklist if near entry
+  const chkCard = document.getElementById('checklist-card');
+  if(chkSetup){
+    chkCard.style.display = 'block';
+    checklistSetup = chkSetup;
+    const isLong = chkSetup.direction === 'long';
+    const items = [
+      isLong ? 'Nến 1H Hammer hoặc Bullish Engulfing?' : 'Nến 4H Bearish Engulfing hoặc Shooting Star?',
+      'Volume nến xác nhận > 2x trung bình?',
+      isLong ? 'Funding rate âm (short đang đau)?' : 'Volume bounce thấp hơn volume dump?',
+      isLong ? 'DXY không tăng đột biến?' : 'Không có daily close ngược chiều?',
+      'Không có sự kiện macro trong 2h?',
+      'R:R ≥ 1:2?',
+      'Không đang FOMO hay revenge trade?',
+    ];
+    document.getElementById('checklist-items').innerHTML = items.map((it,i)=>`
+      <div class="chk-item" id="chk-${i}" onclick="toggleChk(${i},${items.length})">
+        <div class="chk-box" id="chkbox-${i}"></div>
+        <div class="chk-text">${it}</div>
+      </div>
+    `).join('');
+    document.getElementById('chk-score').textContent = 'Tick để xác nhận điều kiện';
+    document.getElementById('btn-from-check').style.display = 'none';
+  } else {
+    chkCard.style.display = 'none';
+  }
+}
+
+let checkedItems = new Set();
+function toggleChk(idx, total){
+  const item = document.getElementById('chk-'+idx);
+  if(checkedItems.has(idx)){ checkedItems.delete(idx); item.classList.remove('checked'); }
+  else { checkedItems.add(idx); item.classList.add('checked'); }
+  const score = checkedItems.size;
+  const scoreEl = document.getElementById('chk-score');
+  const btnUse = document.getElementById('btn-from-check');
+  scoreEl.textContent = `${score}/${total} điều kiện đã tick`;
+  if(score >= 4){
+    scoreEl.style.color = 'var(--green)';
+    scoreEl.textContent += ' — ✅ Đủ điều kiện vào lệnh!';
+    btnUse.style.display = 'block';
+  } else if(score >= 2){
+    scoreEl.style.color = 'var(--gold)';
+    btnUse.style.display = 'none';
+  } else {
+    scoreEl.style.color = 'var(--muted2)';
+    btnUse.style.display = 'none';
+  }
+}
+
+function useChecklistSetup(){
+  if(!checklistSetup) return;
+  useSetup(currentAnalysis.setups.indexOf(checklistSetup));
+}
+
+// ══ DIRECTION ══
+function setDir(d){
+  direction=d;
+  document.getElementById('btn-long').classList.toggle('on',d==='long');
+  document.getElementById('btn-short').classList.toggle('on',d==='short');
+}
+
+// ══ CALC RR ══
+function calcRR(){
+  const e=parseFloat(document.getElementById('f-entry').value);
+  const sl=parseFloat(document.getElementById('f-sl').value);
+  const tp2=parseFloat(document.getElementById('f-tp2').value);
+  const risk=parseFloat(document.getElementById('f-risk').value)||1;
+  const cap=parseFloat(document.getElementById('f-capital').value)||10000;
+  if(!e||!sl||!tp2){document.getElementById('rr-val').textContent='—';return;}
+  const riskAmt=Math.abs(e-sl);
+  const reward=Math.abs(tp2-e);
+  const rr=(reward/riskAmt).toFixed(2);
+  const dollar=(cap*risk/100).toFixed(0);
+  const el=document.getElementById('rr-val');
+  el.textContent=`1:${rr}  ($${dollar} risk)`;
+  el.style.color=rr>=2?'var(--green)':rr>=1.5?'var(--gold)':'var(--red)';
+}
+
+// ══ ADD TRADE ══
+function addTrade(){
+  const entry=parseFloat(document.getElementById('f-entry').value);
+  const sl=parseFloat(document.getElementById('f-sl').value);
+  const tp1=parseFloat(document.getElementById('f-tp1').value);
+  const tp2=parseFloat(document.getElementById('f-tp2').value);
+  const capital=parseFloat(document.getElementById('f-capital').value)||10000;
+  const risk=parseFloat(document.getElementById('f-risk').value)||1;
+  if(!entry||!sl||!tp1||!tp2){showToast('⚠️ Điền đủ Entry, SL, TP1, TP2');return;}
+  const riskAmt=Math.abs(entry-sl);
+  const rr=(Math.abs(tp2-entry)/riskAmt).toFixed(2);
+  const t={
+    id:tradeCounter++,
+    asset:document.getElementById('f-asset').value,
+    setup:document.getElementById('f-setup').value,
+    direction, entry, sl, tp1, tp2, capital, risk,
+    rr, dollarRisk:(capital*risk/100).toFixed(0),
+    week:document.getElementById('f-week').value||'—',
+    scenario:document.getElementById('f-scenario').value||'',
+    reason:document.getElementById('f-reason').value||'—',
+    status:'open',
+    dateOpen:new Date().toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+    dateClose:null,exitPrice:null,pnl:null,rrActual:null,result:null,lesson:'',
+  };
+  trades.push(t); save();
+  ['f-entry','f-sl','f-tp1','f-tp2','f-week','f-reason'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('rr-val').textContent='—';
+  sw('open');
+  showToast('✅ Đã thêm lệnh #'+t.id);
+}
+
+// ══ TRADE CARD ══
+function tradeCardHTML(t, showClose){
+  const isLong=t.direction==='long';
+  const dCol=isLong?'var(--green)':'var(--red)';
+  const dIco=isLong?'📈':'📉';
+  let badge=`<span class="badge b-open">ĐANG MỞ</span>`;
+  if(t.result==='win') badge=`<span class="badge b-win">✅ THẮNG</span>`;
+  if(t.result==='loss') badge=`<span class="badge b-loss">❌ THUA</span>`;
+  if(t.result==='be') badge=`<span class="badge b-be">⚖️ HÒA</span>`;
+  const pnlCol=t.pnl===null?'var(--muted2)':t.pnl>0?'var(--green)':t.pnl<0?'var(--red)':'var(--gold)';
+  const pnlTxt=t.pnl!==null?`${t.pnl>0?'+':''}$${Math.abs(t.pnl).toFixed(0)}`:'—';
+  const scBadge=t.scenario?`<span class="badge ${t.scenario==='sc1'?'b-sc1':'b-sc2'}">${t.scenario==='sc1'?'KB1':'KB2'}</span>`:'';
+
+  const closeHtml=showClose?`
+    <div class="close-row">
+      <div style="flex:1;">
+        <label class="lbl">Giá đóng ($)</label>
+        <input class="inp" id="exit-${t.id}" type="number" placeholder="${t.entry}" style="font-size:13px;padding:8px 10px;">
+      </div>
+      <button class="btn-close btn-cw" onclick="closeTrade(${t.id})">Đóng lệnh</button>
+    </div>
+    <textarea class="lesson-inp" id="lesson-${t.id}" rows="2" placeholder="Bài học sau khi đóng..."></textarea>
+  `:(t.lesson?`<div class="tc-lesson">📝 ${t.lesson}</div>`:'');
+
+  return `<div class="tc ${t.direction} ${t.result||''}">
+    <div class="tc-top">
+      <div class="tc-left">
+        <div class="tc-asset">${dIco} ${t.asset} <span style="color:var(--muted2);font-size:11px;font-weight:400;">#${t.id}</span></div>
+        <div class="tc-sub">${t.setup} · ${t.week} · ${t.dateOpen}</div>
+      </div>
+      <div class="tc-right">
+        ${badge}
+        <div class="tc-pnl" style="color:${pnlCol}">${pnlTxt}</div>
+        ${t.rrActual?`<div class="tc-rr">R:R ${t.rrActual}</div>`:''}
+      </div>
+    </div>
+    <div class="brow">
+      <span class="badge ${isLong?'b-long':'b-short'}">${isLong?'LONG':'SHORT'}</span>
+      ${scBadge}
+      <span style="font-family:var(--mono);font-size:9px;color:var(--muted2);padding:3px 0;">Risk $${t.dollarRisk} · Plan 1:${t.rr}</span>
+    </div>
+    <div class="tc-levels">
+      <div class="lvbox"><div class="lv-l">Entry</div><div class="lv-v">$${Number(t.entry).toLocaleString()}</div></div>
+      <div class="lvbox"><div class="lv-l">SL</div><div class="lv-v" style="color:var(--red)">$${Number(t.sl).toLocaleString()}</div></div>
+      <div class="lvbox"><div class="lv-l">TP1</div><div class="lv-v" style="color:var(--gold)">$${Number(t.tp1).toLocaleString()}</div></div>
+      <div class="lvbox"><div class="lv-l">TP2</div><div class="lv-v" style="color:var(--green)">$${Number(t.tp2).toLocaleString()}</div></div>
+    </div>
+    ${t.reason!=='—'?`<div class="tc-reason">💬 ${t.reason}</div>`:''}
+    ${t.exitPrice?`<div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:8px;">Exit $${t.exitPrice.toLocaleString()} · ${t.dateClose}</div>`:''}
+    ${closeHtml}
+  </div>`;
+}
+
+// ══ CLOSE TRADE ══
+function closeTrade(id){
+  const t=trades.find(t=>t.id===id);
+  if(!t) return;
+  const exitPrice=parseFloat(document.getElementById('exit-'+id)?.value);
+  if(!exitPrice){showToast('⚠️ Nhập giá đóng');return;}
+  const isLong=t.direction==='long';
+  const diff=isLong?(exitPrice-t.entry):(t.entry-exitPrice);
+  const riskPts=Math.abs(t.entry-t.sl);
+  const rrA=(Math.abs(diff)/riskPts).toFixed(2);
+  const pnl=(t.capital*t.risk/100)*(diff/riskPts);
+  t.exitPrice=exitPrice;
+  t.dateClose=new Date().toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  t.pnl=parseFloat(pnl.toFixed(2));
+  t.rrActual=diff>=0?`1:${rrA}`:`-1:${rrA}`;
+  t.result=pnl>5?'win':pnl<-5?'loss':'be';
+  t.status='closed';
+  t.lesson=document.getElementById('lesson-'+id)?.value||'';
+  save();
+  sw('history');
+  showToast(`${t.result==='win'?'✅ THẮNG':'❌ THUA'} ${t.pnl>0?'+':''}$${Math.abs(t.pnl).toFixed(0)}`);
+}
+
+// ══ RENDERS ══
+function renderOpen(){
+  const open=trades.filter(t=>t.status==='open');
+  const el=document.getElementById('open-list');
+  el.innerHTML=open.length?open.map(t=>tradeCardHTML(t,true)).join(''):`<div class="empty"><div class="empty-ico">📭</div><div class="empty-txt">Chưa có lệnh đang mở.<br>Paste phân tích AI → Dùng setup → Thêm lệnh.</div></div>`;
+}
+
+function renderHistory(filter){
+  let data=trades.filter(t=>t.status==='closed');
+  if(filter==='win') data=data.filter(t=>t.result==='win');
+  else if(filter==='loss') data=data.filter(t=>t.result==='loss');
+  else if(filter==='be') data=data.filter(t=>t.result==='be');
+  else if(filter!=='all') data=data.filter(t=>t.asset===filter);
+  const el=document.getElementById('history-list');
+  el.innerHTML=data.length?[...data].reverse().map(t=>tradeCardHTML(t,false)).join(''):`<div class="empty"><div class="empty-ico">📭</div><div class="empty-txt">Chưa có lệnh đã đóng.</div></div>`;
+}
+
+function filterH(f,btn){
+  document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderHistory(f);
+}
+
+function renderStats(){
+  const closed=trades.filter(t=>t.status==='closed');
+  const wins=closed.filter(t=>t.result==='win');
+  const losses=closed.filter(t=>t.result==='loss');
+  const be=closed.filter(t=>t.result==='be');
+  const wr=closed.length?((wins.length/closed.length)*100).toFixed(0):0;
+  const pnl=closed.reduce((s,t)=>s+(t.pnl||0),0);
+  const avgW=wins.length?wins.reduce((s,t)=>s+t.pnl,0)/wins.length:0;
+  const avgL=losses.length?losses.reduce((s,t)=>s+t.pnl,0)/losses.length:0;
+  const pf=losses.length&&avgL?Math.abs(wins.reduce((s,t)=>s+t.pnl,0)/losses.reduce((s,t)=>s+t.pnl,0)).toFixed(2):'—';
+
+  const setupMap={};
+  closed.forEach(t=>{
+    if(!setupMap[t.setup]) setupMap[t.setup]={w:0,l:0,be:0};
+    if(t.result==='win') setupMap[t.setup].w++;
+    else if(t.result==='loss') setupMap[t.setup].l++;
+    else setupMap[t.setup].be++;
+  });
+
+  document.getElementById('stats-content').innerHTML=`
+    <div class="stat-grid">
+      <div class="sbox"><div class="sbox-val" style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(0)}</div><div class="sbox-lbl">Net P&L</div><div class="sbox-sub">${closed.length} lệnh</div></div>
+      <div class="sbox"><div class="sbox-val" style="color:${wr>=50?'var(--green)':wr>=40?'var(--gold)':'var(--red)'}">${wr}%</div><div class="sbox-lbl">Win Rate</div><div class="wr-bar"><div class="wr-fill" style="width:${wr}%"></div></div><div class="sbox-sub">${wins.length}W ${losses.length}L ${be.length}BE</div></div>
+      <div class="sbox"><div class="sbox-val" style="color:var(--gold)">${pf}</div><div class="sbox-lbl">Profit Factor</div><div class="sbox-sub">>1.5 = tốt</div></div>
+      <div class="sbox"><div class="sbox-val" style="color:var(--cyan)">${trades.filter(t=>t.status==='open').length}</div><div class="sbox-lbl">Đang mở</div></div>
+    </div>
+    <div class="stat-grid">
+      <div class="sbox"><div class="sbox-val" style="color:var(--green)">+$${avgW.toFixed(0)}</div><div class="sbox-lbl">Avg Win</div></div>
+      <div class="sbox"><div class="sbox-val" style="color:var(--red)">$${Math.abs(avgL).toFixed(0)}</div><div class="sbox-lbl">Avg Loss</div></div>
+    </div>
+    <div class="quad-grid">
+      <div class="qbox" style="background:rgba(0,240,160,.07);border:1px solid rgba(0,240,160,.15);">
+        <div class="qval" style="color:var(--green)">${wins.length}</div>
+        <div class="qlbl" style="color:var(--green)">Đúng + Thắng<br><span style="color:var(--muted2)">Lý tưởng ✅</span></div>
+      </div>
+      <div class="qbox" style="background:rgba(255,184,0,.07);border:1px solid rgba(255,184,0,.15);">
+        <div class="qval" style="color:var(--gold)">—</div>
+        <div class="qlbl" style="color:var(--gold)">Sai + Thắng<br><span style="color:var(--muted2)">May mắn ⚠️</span></div>
+      </div>
+      <div class="qbox" style="background:rgba(45,156,255,.07);border:1px solid rgba(45,156,255,.15);">
+        <div class="qval" style="color:var(--blue)">—</div>
+        <div class="qlbl" style="color:var(--blue)">Đúng + Thua<br><span style="color:var(--muted2)">Học được 📊</span></div>
+      </div>
+      <div class="qbox" style="background:rgba(255,61,107,.07);border:1px solid rgba(255,61,107,.15);">
+        <div class="qval" style="color:var(--red)">${losses.length}</div>
+        <div class="qlbl" style="color:var(--red)">Sai + Thua<br><span style="color:var(--muted2)">Fix ngay ❌</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd">Hiệu quả theo Setup</div>
+      <table class="setup-tbl">
+        <thead><tr><th>Setup</th><th style="color:var(--green)">W</th><th style="color:var(--red)">L</th><th>Win%</th></tr></thead>
+        <tbody>${Object.entries(setupMap).map(([s,v])=>{const t=v.w+v.l+v.be;const w=((v.w/t)*100).toFixed(0);return`<tr><td style="color:var(--text)">${s}</td><td style="color:var(--green)">${v.w}</td><td style="color:var(--red)">${v.l}</td><td style="color:${w>=50?'var(--green)':'var(--red)'}">${w}%</td></tr>`;}).join('')||`<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:12px;">Chưa có data</td></tr>`}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderExport(){
+  const closed=trades.filter(t=>t.status==='closed');
+  const open=trades.filter(t=>t.status==='open');
+  const wins=closed.filter(t=>t.result==='win');
+  const pnl=closed.reduce((s,t)=>s+(t.pnl||0),0);
+  const wr=closed.length?((wins.length/closed.length)*100).toFixed(0):0;
+  if(!closed.length&&!open.length){document.getElementById('export-text').textContent='Chưa có dữ liệu.';return;}
+  let txt=`=== BÁO CÁO PAPER TRADE v2 ===\nNgày: ${new Date().toLocaleDateString('vi-VN')}\n\n`;
+  txt+=`TỔNG QUAN:\nLệnh đã đóng: ${closed.length} | W: ${wins.length} | L: ${closed.filter(t=>t.result==='loss').length}\nWin Rate: ${wr}% | Net P&L: ${pnl>=0?'+':''}$${pnl.toFixed(2)}\n\n`;
+  if(currentAnalysis?.bias) txt+=`PHÂN TÍCH HIỆN TẠI:\nBias: ${currentAnalysis.bias}\nKịch bản active: ${activeScenario||'Chưa xác định'}\n\n`;
+  if(open.length){txt+=`ĐANG MỞ:\n`;open.forEach(t=>{txt+=`#${t.id} ${t.direction.toUpperCase()} ${t.asset} | E:$${t.entry} SL:$${t.sl} TP1:$${t.tp1} TP2:$${t.tp2}\n   ${t.setup} | ${t.week} | KB: ${t.scenario||'—'}\n   Lý do: ${t.reason}\n\n`;});}
+  if(closed.length){txt+=`LỊCH SỬ:\n`;[...closed].reverse().forEach(t=>{const r=t.result==='win'?'✅':'❌';txt+=`${r} #${t.id} ${t.direction.toUpperCase()} ${t.asset} | E:$${t.entry} → X:$${t.exitPrice}\n   P&L: ${t.pnl>0?'+':''}$${t.pnl} | R:R ${t.rrActual} | ${t.week}\n`;if(t.lesson)txt+=`   Bài học: ${t.lesson}\n`;txt+='\n';});}
+  txt+=`=== END ===\n\nHãy phân tích lịch sử trên:\n1. Setup nào hiệu quả nhất?\n2. Sai lầm nào đang lặp lại?\n3. Cần điều chỉnh gì cho tuần tới?`;
+  document.getElementById('export-text').textContent=txt;
+}
+
+function copyExport(){
+  navigator.clipboard.writeText(document.getElementById('export-text').textContent).then(()=>showToast('✅ Đã copy báo cáo'));
+}
+
+// ══ HEADER ══
+function updateHeader(){
+  const closed=trades.filter(t=>t.status==='closed');
+  const wins=closed.filter(t=>t.result==='win');
+  const pnl=closed.reduce((s,t)=>s+(t.pnl||0),0);
+  const wr=closed.length?((wins.length/closed.length)*100).toFixed(0)+'%':'—';
+  const pe=document.getElementById('h-pnl');
+  pe.textContent=`${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(0)}`;
+  pe.style.color=pnl>=0?'var(--green)':'var(--red)';
+  document.getElementById('h-wr').textContent=wr;
+}
+
+// ══ SAVE ══
+function save(){localStorage.setItem('pt2_trades',JSON.stringify(trades));updateHeader();}
+
+// ══ TOAST ══
+function showToast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+// ══ INIT ══
+updateHeader();
+renderOpen();
+if(currentAnalysis) showParsed();
+</script>
+</body>
+</html>

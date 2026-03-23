@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>PaperTrade Pro v2</title>
+<title>PaperTrade Pro v3</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
@@ -29,14 +29,45 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 0%,rgba(0,240,160,.04) 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(45,156,255,.04) 0%,transparent 60%);pointer-events:none;z-index:0;}
 
 /* HEADER */
-.hdr{background:rgba(8,13,20,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 16px;position:sticky;top:0;z-index:200;}
-.hdr-inner{max-width:500px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;}
+.hdr{background:rgba(8,13,20,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:10px 16px;position:sticky;top:0;z-index:200;}
+.hdr-inner{max-width:500px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
 .logo{font-size:17px;font-weight:700;letter-spacing:-0.5px;}
 .logo .v{color:var(--green);font-size:11px;font-weight:500;vertical-align:super;margin-left:2px;}
 .hdr-nums{display:flex;gap:16px;}
 .hnum{text-align:right;}
 .hnum-val{font-family:var(--mono);font-size:14px;font-weight:600;}
 .hnum-lbl{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+
+/* PRICE TICKER BAR */
+.ticker-bar{max-width:500px;margin:0 auto;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+.ticker-bar::-webkit-scrollbar{display:none;}
+.ticker-item{display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--border2);border-radius:20px;padding:5px 12px;white-space:nowrap;flex-shrink:0;transition:all .3s;}
+.ticker-item.alert-zone{border-color:var(--red);background:rgba(255,61,107,.12);animation:pulse 1.5s infinite;}
+.ticker-item.near-zone{border-color:var(--gold);background:rgba(255,184,0,.08);}
+.ticker-item.safe-zone{border-color:var(--green);background:rgba(0,240,160,.06);}
+.t-name{font-family:var(--mono);font-size:10px;color:var(--muted2);font-weight:600;}
+.t-price{font-family:var(--mono);font-size:13px;font-weight:700;}
+.t-change{font-family:var(--mono);font-size:10px;}
+.t-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.t-zone{font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;}
+.t-upd{font-size:8px;color:var(--muted);font-family:var(--mono);}
+
+/* ALERT BANNER */
+.alert-banner{position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:500;max-width:460px;width:calc(100% - 32px);}
+.alert-card{border-radius:12px;padding:12px 16px;margin-bottom:6px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+.alert-card.danger{background:rgba(255,61,107,.15);border:1px solid rgba(255,61,107,.4);}
+.alert-card.bullish{background:rgba(0,240,160,.12);border:1px solid rgba(0,240,160,.35);}
+.alert-card.warning{background:rgba(255,184,0,.12);border:1px solid rgba(255,184,0,.35);}
+.ac-ico{font-size:20px;flex-shrink:0;}
+.ac-body{flex:1;}
+.ac-title{font-size:13px;font-weight:700;margin-bottom:2px;}
+.alert-card.danger .ac-title{color:var(--red);}
+.alert-card.bullish .ac-title{color:var(--green);}
+.alert-card.warning .ac-title{color:var(--gold);}
+.ac-desc{font-size:11px;color:var(--muted2);line-height:1.4;}
+.ac-close{font-size:16px;color:var(--muted);cursor:pointer;padding:4px;}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
 
 /* MAIN */
 .main{max-width:500px;margin:0 auto;padding:16px;position:relative;z-index:1;}
@@ -233,7 +264,7 @@ textarea.inp{resize:none;line-height:1.6;}
 
 <div class="hdr">
   <div class="hdr-inner">
-    <div class="logo">PAPER TRADE<span class="v">v2</span></div>
+    <div class="logo">PAPER TRADE<span class="v">v3</span></div>
     <div class="hdr-nums">
       <div class="hnum">
         <div class="hnum-val" id="h-pnl" style="color:var(--green)">$0</div>
@@ -245,7 +276,15 @@ textarea.inp{resize:none;line-height:1.6;}
       </div>
     </div>
   </div>
+  <div class="ticker-bar" id="ticker-bar">
+    <div class="ticker-item" style="border-color:rgba(74,98,128,.3);">
+      <div class="t-dot" style="background:var(--muted);"></div>
+      <span class="t-name" style="font-size:10px;color:var(--muted);">Paste phân tích → Giá tự cập nhật</span>
+    </div>
+  </div>
 </div>
+
+<div class="alert-banner" id="alert-banner"></div>
 
 <div class="main">
   <div class="tabs">
@@ -302,12 +341,15 @@ textarea.inp{resize:none;line-height:1.6;}
   <!-- ══ PRICE CHECK ══ -->
   <div id="p-check" class="panel">
     <div class="price-check-wrap">
-      <div class="pc-title">Nhập giá hiện tại</div>
+      <div class="pc-title">Nhập hoặc dùng giá real-time</div>
       <div class="pc-input-row">
-        <input class="pc-inp" id="pc-price" type="number" placeholder="68951">
+        <input class="pc-inp" id="pc-price" type="number" placeholder="Nhập giá..." oninput="this.dataset.manualInput='1'">
         <button class="btn-check" onclick="checkPrice()">Kiểm tra</button>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:0;">Copy giá từ TradingView → Paste vào đây → App so sánh với key levels</div>
+      <button onclick="autoCheckPrice()" style="width:100%;padding:9px;border-radius:9px;border:1px solid rgba(0,212,255,.25);background:rgba(0,212,255,.08);color:var(--cyan);font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;margin-top:6px;margin-bottom:8px;">
+        ⚡ Dùng giá real-time hiện tại
+      </button>
+      <div style="font-size:11px;color:var(--muted);">Hoặc copy giá từ TradingView → Paste vào ô trên</div>
     </div>
 
     <div class="pc-result" id="pc-result">
@@ -434,6 +476,287 @@ let tradeCounter = trades.length>0 ? Math.max(...trades.map(t=>t.id))+1 : 1;
 let activeScenario = localStorage.getItem('pt2_activeSc')||null;
 let checklistSetup = null;
 
+// ══ REAL-TIME PRICE ENGINE ══
+let priceInterval = null;
+let lastPrices = {};
+let shownAlerts = new Set();
+
+// Nhận diện tài sản từ phân tích
+function detectAsset(text) {
+  if (!text) return null;
+  const t = text.toUpperCase();
+  if (t.includes('XAUUSD') || t.includes('XAU/USD') || t.includes('VÀNG') || t.includes('GOLD')) return 'GOLD';
+  if (t.includes('BTC') || t.includes('BITCOIN')) return 'BTC';
+  if (t.includes('ETH') || t.includes('ETHEREUM')) return 'ETH';
+  return null;
+}
+
+// Fetch giá BTC/ETH từ Binance (miễn phí, real-time)
+async function fetchBinancePrice(symbol) {
+  try {
+    const sym = symbol === 'BTC' ? 'BTCUSDT' : 'ETHUSDT';
+    const r = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`);
+    const d = await r.json();
+    return {
+      price: parseFloat(d.lastPrice),
+      change: parseFloat(d.priceChangePercent),
+      high: parseFloat(d.highPrice),
+      low: parseFloat(d.lowPrice)
+    };
+  } catch(e) { return null; }
+}
+
+// Fetch giá Vàng từ Metals-API (free tier, delay 60s)
+// Fallback dùng exchangerate-api nếu metals không có
+async function fetchGoldPrice() {
+  try {
+    // Dùng Frankfurter API để lấy XAU/USD (miễn phí hoàn toàn)
+    const r = await fetch('https://api.frankfurter.app/latest?from=XAU&to=USD');
+    const d = await r.json();
+    if (d.rates && d.rates.USD) {
+      return { price: d.rates.USD, change: null };
+    }
+    return null;
+  } catch(e) {
+    // Fallback: metals-api free
+    try {
+      const r2 = await fetch('https://metals-api.com/api/latest?access_key=free&base=XAU&symbols=USD');
+      const d2 = await r2.json();
+      if (d2.rates) return { price: d2.rates.USD, change: null };
+    } catch(e2) {}
+    return null;
+  }
+}
+
+// Tính khoảng cách % giữa giá và level
+function distPct(price, level) {
+  return Math.abs((price - level) / level * 100);
+}
+
+// Phân tích vùng giá so với key levels
+function analyzeZone(price, analysis) {
+  if (!analysis || !analysis.keyLevels || !analysis.setups) return null;
+
+  // Parse key levels thành số
+  const levels = analysis.keyLevels.map(l => {
+    const n = parseFloat(l.replace(/[$,K]/g, l.includes('K') ? '000' : '').replace('$',''));
+    return isNaN(n) ? null : n;
+  }).filter(Boolean);
+
+  // Check setups
+  for (const s of analysis.setups) {
+    if (!s.entry) continue;
+    const entry = parseFloat(s.entry);
+    const sl = parseFloat(s.sl);
+    const tp1 = parseFloat(s.tp1);
+    const dist = distPct(price, entry);
+
+    if (dist < 1.0) return { type: 'entry', setup: s, dist };
+    if (dist < 3.0) return { type: 'near', setup: s, dist };
+    if (sl && distPct(price, sl) < 1.0) return { type: 'sl_danger', setup: s };
+    if (tp1 && distPct(price, tp1) < 1.0) return { type: 'tp1_near', setup: s };
+  }
+  return { type: 'neutral' };
+}
+
+// Cập nhật ticker bar
+function updateTicker(asset, data, zone) {
+  if (!data) return;
+  const bar = document.getElementById('ticker-bar');
+
+  const chgColor = data.change === null ? 'var(--muted2)' :
+    data.change >= 0 ? 'var(--green)' : 'var(--red)';
+  const chgTxt = data.change !== null ?
+    `${data.change >= 0 ? '+' : ''}${data.change.toFixed(2)}%` : 'live';
+
+  // Zone styling
+  let zoneClass = '';
+  let zoneTxt = '';
+  let dotColor = 'var(--green)';
+
+  if (zone) {
+    if (zone.type === 'entry') {
+      zoneClass = 'alert-zone';
+      zoneTxt = '🎯 ENTRY';
+      dotColor = 'var(--red)';
+    } else if (zone.type === 'near') {
+      zoneClass = 'near-zone';
+      zoneTxt = `⚡ ${zone.dist.toFixed(1)}%`;
+      dotColor = 'var(--gold)';
+    } else if (zone.type === 'sl_danger') {
+      zoneClass = 'alert-zone';
+      zoneTxt = '⚠️ SL!';
+      dotColor = 'var(--red)';
+    } else if (zone.type === 'tp1_near') {
+      zoneClass = 'safe-zone';
+      zoneTxt = '🎯 TP1';
+      dotColor = 'var(--green)';
+    }
+  }
+
+  const assetLabel = asset === 'GOLD' ? 'XAU/USD' : asset + '/USDT';
+  const priceStr = asset === 'GOLD' ?
+    '$' + data.price.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}) :
+    '$' + data.price.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0});
+
+  bar.innerHTML = `
+    <div class="ticker-item ${zoneClass}" id="tick-main">
+      <div class="t-dot" style="background:${dotColor};box-shadow:0 0 6px ${dotColor};"></div>
+      <span class="t-name">${assetLabel}</span>
+      <span class="t-price" style="color:${data.change===null?'var(--text)':data.change>=0?'var(--green)':'var(--red)'}">${priceStr}</span>
+      <span class="t-change" style="color:${chgColor}">${chgTxt}</span>
+      ${zoneTxt ? `<span class="t-zone" style="background:${zoneClass==='alert-zone'?'rgba(255,61,107,.2)':zoneClass==='near-zone'?'rgba(255,184,0,.2)':'rgba(0,240,160,.2)'};color:${dotColor}">${zoneTxt}</span>` : ''}
+    </div>
+    <div class="ticker-item" style="border-color:rgba(74,98,128,.2);cursor:default;">
+      <span class="t-upd" id="tick-time">cập nhật...</span>
+    </div>
+  `;
+
+  // Update timestamp
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  const el = document.getElementById('tick-time');
+  if (el) el.textContent = timeStr;
+
+  lastPrices[asset] = data.price;
+}
+
+// Hiện alert banner
+function showAlertBanner(type, title, desc, id) {
+  if (shownAlerts.has(id)) return;
+  shownAlerts.add(id);
+
+  const banner = document.getElementById('alert-banner');
+  const card = document.createElement('div');
+  card.className = `alert-card ${type}`;
+  card.innerHTML = `
+    <div class="ac-ico">${type==='danger'?'🚨':type==='bullish'?'🎯':'⚡'}</div>
+    <div class="ac-body">
+      <div class="ac-title">${title}</div>
+      <div class="ac-desc">${desc}</div>
+    </div>
+    <div class="ac-close" onclick="this.parentElement.remove()">✕</div>
+  `;
+  banner.appendChild(card);
+
+  // Auto remove after 8s
+  setTimeout(() => { if (card.parentElement) card.remove(); }, 8000);
+}
+
+// Check cảnh báo quan trọng
+function checkAlerts(asset, price, analysis) {
+  if (!analysis || !analysis.setups) return;
+
+  analysis.setups.forEach((s, i) => {
+    if (!s.entry) return;
+    const entry = parseFloat(s.entry);
+    const sl = parseFloat(s.sl);
+    const tp1 = parseFloat(s.tp1);
+    const isLong = s.direction === 'long';
+
+    // Vào vùng entry
+    if (distPct(price, entry) < 1.5) {
+      showAlertBanner('danger',
+        `🎯 Giá vào vùng ENTRY — ${s.name?.slice(0,30)}`,
+        `${asset} $${price.toLocaleString()} đang trong vùng entry $${entry.toLocaleString()}. Mở checklist kiểm tra điều kiện!`,
+        `entry-${i}-${Math.floor(price/100)}`
+      );
+    }
+
+    // Gần SL (trong 1%)
+    if (sl && distPct(price, sl) < 1.0) {
+      showAlertBanner('danger',
+        `⚠️ GẦN STOP LOSS — Lệnh ${s.direction.toUpperCase()}`,
+        `${asset} $${price.toLocaleString()} sắp chạm SL $${sl.toLocaleString()}. Chuẩn bị tâm lý đóng lệnh!`,
+        `sl-${i}-${Math.floor(price/100)}`
+      );
+    }
+
+    // Gần TP1
+    if (tp1 && distPct(price, tp1) < 1.0) {
+      showAlertBanner('bullish',
+        `🎯 SẮP ĐẠT TP1 — Chuẩn bị chốt 50%`,
+        `${asset} $${price.toLocaleString()} gần Take Profit 1 $${tp1.toLocaleString()}. Sẵn sàng chốt lời!`,
+        `tp1-${i}-${Math.floor(price/100)}`
+      );
+    }
+  });
+
+  // Check với open trades
+  trades.filter(t=>t.status==='open').forEach(t => {
+    if (distPct(price, t.sl) < 0.8) {
+      showAlertBanner('danger',
+        `🚨 Lệnh #${t.id} — GẦN SL!`,
+        `${asset} $${price.toLocaleString()} sắp chạm Stop Loss $${t.sl.toLocaleString()} của lệnh đang mở!`,
+        `open-sl-${t.id}-${Math.floor(price/100)}`
+      );
+    }
+    if (t.tp1 && distPct(price, t.tp1) < 0.8) {
+      showAlertBanner('bullish',
+        `🎯 Lệnh #${t.id} — Sắp TP1!`,
+        `${asset} $${price.toLocaleString()} gần TP1 $${t.tp1.toLocaleString()}. Chốt 50%!`,
+        `open-tp1-${t.id}-${Math.floor(price/100)}`
+      );
+    }
+  });
+}
+
+// Main price update loop
+async function updatePrice() {
+  const asset = currentAnalysis ? detectAsset(currentAnalysis.raw || '') : null;
+  if (!asset) return;
+
+  let data = null;
+  if (asset === 'BTC') data = await fetchBinancePrice('BTC');
+  else if (asset === 'ETH') data = await fetchBinancePrice('ETH');
+  else if (asset === 'GOLD') data = await fetchGoldPrice();
+
+  if (!data) {
+    document.getElementById('ticker-bar').innerHTML = `
+      <div class="ticker-item" style="border-color:rgba(255,61,107,.2);">
+        <div class="t-dot" style="background:var(--red);"></div>
+        <span class="t-name" style="color:var(--muted2);">Lỗi kết nối API — Kiểm tra internet</span>
+      </div>`;
+    return;
+  }
+
+  const zone = analyzeZone(data.price, currentAnalysis);
+  updateTicker(asset, data, zone);
+  checkAlerts(asset, data.price, currentAnalysis);
+
+  // Auto-fill giá vào tab kiểm tra
+  const pcInp = document.getElementById('pc-price');
+  if (pcInp && !pcInp.dataset.manualInput) {
+    pcInp.placeholder = `${data.price.toFixed(0)} (auto)`;
+  }
+}
+
+// Khởi động price engine
+function startPriceEngine() {
+  if (priceInterval) clearInterval(priceInterval);
+  updatePrice(); // Lần đầu ngay lập tức
+  priceInterval = setInterval(updatePrice, 30000); // 30 giây/lần
+  shownAlerts.clear(); // Reset alerts
+}
+
+// Dừng engine khi không cần
+function stopPriceEngine() {
+  if (priceInterval) { clearInterval(priceInterval); priceInterval = null; }
+  document.getElementById('ticker-bar').innerHTML = `
+    <div class="ticker-item" style="border-color:rgba(74,98,128,.3);">
+      <div class="t-dot" style="background:var(--muted);"></div>
+      <span class="t-name" style="color:var(--muted);font-size:10px;">Paste phân tích → Giá tự cập nhật</span>
+    </div>`;
+}
+
+// Auto-fill price vào kiểm tra
+function autoCheckPrice() {
+  const asset = currentAnalysis ? detectAsset(currentAnalysis.raw || '') : null;
+  if (!asset || !lastPrices[asset]) return;
+  document.getElementById('pc-price').value = Math.round(lastPrices[asset]);
+  checkPrice();
+}
+
 // ══ TABS ══
 function sw(n){
   const ids=['ai','check','open','new','history','stats','export'];
@@ -455,7 +778,15 @@ function parseAI(){
   currentAnalysis = analysis;
   localStorage.setItem('pt2_analysis', JSON.stringify(analysis));
   showParsed();
-  showToast('✅ Đã nhận diện xong');
+
+  // Nhận diện tài sản và khởi động price engine
+  const asset = detectAsset(text);
+  if (asset) {
+    startPriceEngine();
+    showToast(`✅ Nhận diện xong · Đang theo dõi giá ${asset === 'GOLD' ? 'Vàng' : asset} real-time`);
+  } else {
+    showToast('✅ Đã nhận diện xong');
+  }
 }
 
 function extractAnalysis(text){
@@ -1076,7 +1407,14 @@ function showToast(msg){
 // ══ INIT ══
 updateHeader();
 renderOpen();
-if(currentAnalysis) showParsed();
+if(currentAnalysis) {
+  showParsed();
+  // Khởi động lại price engine nếu đã có phân tích
+  const asset = detectAsset(currentAnalysis.raw || '');
+  if (asset) {
+    setTimeout(startPriceEngine, 1000); // delay 1s để UI load xong
+  }
+}
 </script>
 </body>
 </html>

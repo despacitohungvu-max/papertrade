@@ -475,57 +475,159 @@ let direction = 'long';
 let tradeCounter = trades.length>0 ? Math.max(...trades.map(t=>t.id))+1 : 1;
 let activeScenario = localStorage.getItem('pt2_activeSc')||null;
 let checklistSetup = null;
+// Lưu tài sản đang theo dõi riêng — không bị ghi đè
+let currentAsset = localStorage.getItem('pt2_asset') || null;
 
 // ══ REAL-TIME PRICE ENGINE ══
 let priceInterval = null;
 let lastPrices = {};
 let shownAlerts = new Set();
 
-// Nhận diện tài sản từ phân tích
+// Nhận diện tài sản từ text — Vàng ưu tiên trước BTC
 function detectAsset(text) {
   if (!text) return null;
   const t = text.toUpperCase();
-  if (t.includes('XAUUSD') || t.includes('XAU/USD') || t.includes('VÀNG') || t.includes('GOLD')) return 'GOLD';
-  if (t.includes('BTC') || t.includes('BITCOIN')) return 'BTC';
-  if (t.includes('ETH') || t.includes('ETHEREUM')) return 'ETH';
+  // Kiểm tra Vàng trước (tránh nhầm khi text có cả BTC lẫn GOLD)
+  if (
+    t.includes('XAUUSD') ||
+    t.includes('XAU/USD') ||
+    t.includes('XAU ') ||
+    t.match(/\bVÀNG\b/) ||
+    t.match(/\bGOLD\b/) ||
+    t.includes('PHÂN TÍCH VÀNG') ||
+    t.includes('PHÂN TÍCH XAUUSD')
+  ) return 'GOLD';
+  if (t.includes('BTC/USDT') || t.includes('BTCUSDT') || t.includes('BITCOIN') || t.match(/\bBTC\b/)) return 'BTC';
+  if (t.includes('ETH/USDT') || t.includes('ETHUSDT') || t.includes('ETHEREUM') || t.match(/\bETH\b/)) return 'ETH';
   return null;
 }
 
-// Fetch giá BTC/ETH từ Binance (miễn phí, real-time)
-async function fetchBinancePrice(symbol) {
-  try {
-    const sym = symbol === 'BTC' ? 'BTCUSDT' : 'ETHUSDT';
-    const r = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`);
-    const d = await r.json();
-    return {
-      price: parseFloat(d.lastPrice),
-      change: parseFloat(d.priceChangePercent),
-      high: parseFloat(d.highPrice),
-      low: parseFloat(d.lowPrice)
-    };
-  } catch(e) { return null; }
+// Lưu tài sản hiện tại vào localStorage
+function setCurrentAsset(asset) {
+  currentAsset = asset;
+  if (asset) localStorage.setItem('pt2_asset', asset);
+  else localStorage.removeItem('pt2_asset');
 }
 
-// Fetch giá Vàng từ Metals-API (free tier, delay 60s)
-// Fallback dùng exchangerate-api nếu metals không có
-async function fetchGoldPrice() {
+// Fetch giá BTC/ETH — dùng nhiều nguồn fallback
+async function fetchBinancePrice(symbol) {
+  const sym = symbol === 'BTC' ? 'BTCUSDT' : 'ETHUSDT';
+  const symLower = symbol === 'BTC' ? 'bitcoin' : 'ethereum';
+
+  // Nguồn 1: CoinGecko (không cần key, không bị CORS)
   try {
-    // Dùng Frankfurter API để lấy XAU/USD (miễn phí hoàn toàn)
+    const r = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${symLower}&vs_currencies=usd&include_24hr_change=true`,
+      { headers: { 'Accept': 'application/json' } }
+    );
+    const d = await r.json();
+    if (d[symLower]) {
+      return {
+        price: d[symLower].usd,
+        change: d[symLower].usd_24h_change || 0,
+        source: 'CoinGecko'
+      };
+    }
+  } catch(e1) {}
+
+  // Nguồn 2: Binance API trực tiếp
+  try {
+    const r = await fetch(
+      `https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`
+    );
+    const d = await r.json();
+    if (d.lastPrice) {
+      return {
+        price: parseFloat(d.lastPrice),
+        change: parseFloat(d.priceChangePercent),
+        source: 'Binance'
+      };
+    }
+  } catch(e2) {}
+
+  // Nguồn 3: Coinbase API
+  try {
+    const r = await fetch(
+      `https://api.coinbase.com/v2/prices/${symbol}-USD/spot`
+    );
+    const d = await r.json();
+    if (d.data && d.data.amount) {
+      return {
+        price: parseFloat(d.data.amount),
+        change: null,
+        source: 'Coinbase'
+      };
+    }
+  } catch(e3) {}
+
+  // Nguồn 4: Kraken API
+  try {
+    const kSym = symbol === 'BTC' ? 'XXBTZUSD' : 'XETHZUSD';
+    const r = await fetch(
+      `https://api.kraken.com/0/public/Ticker?pair=${kSym}`
+    );
+    const d = await r.json();
+    const key = Object.keys(d.result || {})[0];
+    if (key && d.result[key]) {
+      return {
+        price: parseFloat(d.result[key].c[0]),
+        change: null,
+        source: 'Kraken'
+      };
+    }
+  } catch(e4) {}
+
+  return null;
+}
+
+// Fetch giá Vàng — nhiều nguồn fallback
+async function fetchGoldPrice() {
+  // Nguồn 1: Metals.live (miễn phí, không cần key)
+  try {
+    const r = await fetch('https://metals.live/api/spot/usd');
+    const d = await r.json();
+    if (d && d.gold) {
+      return { price: d.gold, change: null, source: 'Metals.live' };
+    }
+  } catch(e1) {}
+
+  // Nguồn 2: GoldAPI free tier
+  try {
+    const r = await fetch(
+      'https://www.goldapi.io/api/XAU/USD',
+      { headers: { 'x-access-token': 'goldapi-demo' } }
+    );
+    const d = await r.json();
+    if (d.price) {
+      return { price: d.price, change: d.chp || null, source: 'GoldAPI' };
+    }
+  } catch(e2) {}
+
+  // Nguồn 3: Frankfurter (XAU/USD từ ECB data)
+  try {
     const r = await fetch('https://api.frankfurter.app/latest?from=XAU&to=USD');
     const d = await r.json();
     if (d.rates && d.rates.USD) {
-      return { price: d.rates.USD, change: null };
+      return { price: d.rates.USD, change: null, source: 'Frankfurter' };
     }
-    return null;
-  } catch(e) {
-    // Fallback: metals-api free
-    try {
-      const r2 = await fetch('https://metals-api.com/api/latest?access_key=free&base=XAU&symbols=USD');
-      const d2 = await r2.json();
-      if (d2.rates) return { price: d2.rates.USD, change: null };
-    } catch(e2) {}
-    return null;
-  }
+  } catch(e3) {}
+
+  // Nguồn 4: CoinGecko (vàng là tether-gold hoặc pax-gold)
+  try {
+    const r = await fetch(
+      'https://api.coingecko.com/api/v3/simple/price?ids=pax-gold&vs_currencies=usd&include_24hr_change=true'
+    );
+    const d = await r.json();
+    if (d['pax-gold']) {
+      return {
+        price: d['pax-gold'].usd,
+        change: d['pax-gold'].usd_24h_change || null,
+        source: 'CoinGecko/PAXG'
+      };
+    }
+  } catch(e4) {}
+
+  return null;
 }
 
 // Tính khoảng cách % giữa giá và level
@@ -607,8 +709,9 @@ function updateTicker(asset, data, zone) {
       <span class="t-change" style="color:${chgColor}">${chgTxt}</span>
       ${zoneTxt ? `<span class="t-zone" style="background:${zoneClass==='alert-zone'?'rgba(255,61,107,.2)':zoneClass==='near-zone'?'rgba(255,184,0,.2)':'rgba(0,240,160,.2)'};color:${dotColor}">${zoneTxt}</span>` : ''}
     </div>
-    <div class="ticker-item" style="border-color:rgba(74,98,128,.2);cursor:default;">
-      <span class="t-upd" id="tick-time">cập nhật...</span>
+    <div class="ticker-item" style="border-color:rgba(74,98,128,.2);cursor:pointer;" onclick="updatePrice()">
+      <span class="t-upd" id="tick-time">...</span>
+      ${data.source ? `<span style="font-size:8px;color:var(--muted);margin-left:4px;">${data.source}</span>` : ''}
     </div>
   `;
 
@@ -703,7 +806,8 @@ function checkAlerts(asset, price, analysis) {
 
 // Main price update loop
 async function updatePrice() {
-  const asset = currentAnalysis ? detectAsset(currentAnalysis.raw || '') : null;
+  // Dùng currentAsset đã được lưu riêng — không đọc lại từ analysis
+  const asset = currentAsset;
   if (!asset) return;
 
   let data = null;
@@ -713,9 +817,10 @@ async function updatePrice() {
 
   if (!data) {
     document.getElementById('ticker-bar').innerHTML = `
-      <div class="ticker-item" style="border-color:rgba(255,61,107,.2);">
+      <div class="ticker-item" style="border-color:rgba(255,61,107,.2);cursor:pointer;" onclick="updatePrice()">
         <div class="t-dot" style="background:var(--red);"></div>
-        <span class="t-name" style="color:var(--muted2);">Lỗi kết nối API — Kiểm tra internet</span>
+        <span class="t-name" style="color:var(--muted2);">Lỗi API — Nhấn để thử lại</span>
+        <span style="font-size:9px;color:var(--muted);margin-left:4px;">(Tắt VPN nếu đang bật)</span>
       </div>`;
     return;
   }
@@ -727,16 +832,16 @@ async function updatePrice() {
   // Auto-fill giá vào tab kiểm tra
   const pcInp = document.getElementById('pc-price');
   if (pcInp && !pcInp.dataset.manualInput) {
-    pcInp.placeholder = `${data.price.toFixed(0)} (auto)`;
+    pcInp.placeholder = `${Math.round(data.price).toLocaleString()} (auto)`;
   }
 }
 
 // Khởi động price engine
 function startPriceEngine() {
   if (priceInterval) clearInterval(priceInterval);
+  shownAlerts.clear();
   updatePrice(); // Lần đầu ngay lập tức
   priceInterval = setInterval(updatePrice, 30000); // 30 giây/lần
-  shownAlerts.clear(); // Reset alerts
 }
 
 // Dừng engine khi không cần
@@ -751,9 +856,13 @@ function stopPriceEngine() {
 
 // Auto-fill price vào kiểm tra
 function autoCheckPrice() {
-  const asset = currentAnalysis ? detectAsset(currentAnalysis.raw || '') : null;
-  if (!asset || !lastPrices[asset]) return;
-  document.getElementById('pc-price').value = Math.round(lastPrices[asset]);
+  if (!currentAsset || !lastPrices[currentAsset]) {
+    showToast('⚠️ Chưa có giá. Paste phân tích và đợi 5 giây.');
+    return;
+  }
+  const inp = document.getElementById('pc-price');
+  inp.value = Math.round(lastPrices[currentAsset]);
+  inp.removeAttribute('data-manual-input');
   checkPrice();
 }
 
@@ -774,18 +883,25 @@ function parseAI(){
   const text = document.getElementById('ai-text').value.trim();
   if(!text){showToast('⚠️ Paste phân tích vào trước');return;}
 
+  // Nhận diện tài sản TRƯỚC KHI lưu analysis
+  const asset = detectAsset(text);
+  setCurrentAsset(asset);
+
   const analysis = extractAnalysis(text);
+  analysis.raw = text; // Lưu raw text để debug
   currentAnalysis = analysis;
   localStorage.setItem('pt2_analysis', JSON.stringify(analysis));
   showParsed();
 
-  // Nhận diện tài sản và khởi động price engine
-  const asset = detectAsset(text);
+  // Khởi động price engine với tài sản mới
   if (asset) {
+    lastPrices = {}; // Reset giá cũ
+    shownAlerts.clear();
     startPriceEngine();
-    showToast(`✅ Nhận diện xong · Đang theo dõi giá ${asset === 'GOLD' ? 'Vàng' : asset} real-time`);
+    const assetLabel = asset === 'GOLD' ? 'Vàng (XAUUSD)' : asset + '/USDT';
+    showToast(`✅ Nhận diện xong · Đang theo dõi ${assetLabel}`);
   } else {
-    showToast('✅ Đã nhận diện xong');
+    showToast('✅ Đã nhận diện · Không rõ tài sản — nhập giá thủ công');
   }
 }
 
@@ -1409,10 +1525,20 @@ updateHeader();
 renderOpen();
 if(currentAnalysis) {
   showParsed();
-  // Khởi động lại price engine nếu đã có phân tích
-  const asset = detectAsset(currentAnalysis.raw || '');
-  if (asset) {
-    setTimeout(startPriceEngine, 1000); // delay 1s để UI load xong
+  // Khôi phục tài sản từ localStorage
+  // currentAsset đã được load ở đầu state
+  if (currentAsset) {
+    setTimeout(startPriceEngine, 1000);
+  } else {
+    // Fallback: nhận diện lại từ raw text nếu có
+    const raw = currentAnalysis.raw || '';
+    if (raw) {
+      const asset = detectAsset(raw);
+      if (asset) {
+        setCurrentAsset(asset);
+        setTimeout(startPriceEngine, 1000);
+      }
+    }
   }
 }
 </script>

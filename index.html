@@ -111,6 +111,33 @@ textarea.inp{resize:none;line-height:1.6;}
 .btn-blue{background:linear-gradient(135deg,#1a7aff,#2d9cff);color:#fff;margin-top:8px;}
 .btn-ghost{background:var(--s2);border:1px solid var(--border2);color:var(--muted2);}
 
+/* ══ GEMINI KEY BOX ══ */
+.gemini-box{background:linear-gradient(135deg,rgba(0,212,255,.06),rgba(155,109,255,.06));border:1px solid rgba(0,212,255,.25);border-radius:12px;padding:14px;margin-bottom:14px;}
+.gemini-box.connected{border-color:rgba(0,240,160,.3);background:linear-gradient(135deg,rgba(0,240,160,.06),rgba(0,212,255,.04));}
+.gemini-hd{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.gemini-logo{font-size:18px;}
+.gemini-title{font-size:13px;font-weight:700;color:var(--text);}
+.gemini-sub{font-size:10px;color:var(--muted2);margin-top:1px;}
+.gemini-status{margin-left:auto;font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 8px;border-radius:5px;}
+.gemini-status.ok{background:var(--green2);color:var(--green);}
+.gemini-status.no{background:var(--s3);color:var(--muted2);}
+.key-row{display:flex;gap:8px;}
+.key-inp{flex:1;background:var(--s2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:var(--mono);font-size:11px;padding:9px 12px;outline:none;-webkit-appearance:none;transition:border-color .2s;}
+.key-inp:focus{border-color:rgba(0,212,255,.5);}
+.btn-save-key{padding:9px 14px;border-radius:9px;border:none;background:linear-gradient(135deg,#0090cc,#00d4ff);color:#040a0e;font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.key-hint{font-size:10px;color:var(--muted);margin-top:7px;line-height:1.5;}
+.key-hint a{color:var(--cyan);text-decoration:none;}
+
+/* AI loading spinner */
+.ai-loading{display:none;text-align:center;padding:20px 0;}
+.ai-loading.show{display:block;}
+.spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--border2);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:8px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-loading-txt{font-size:12px;color:var(--muted2);font-family:var(--mono);}
+.ai-mode-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;padding:3px 8px;border-radius:5px;margin-left:8px;}
+.ai-mode-badge.gemini{background:rgba(0,212,255,.12);color:var(--cyan);border:1px solid rgba(0,212,255,.2);}
+.ai-mode-badge.regex{background:var(--s3);color:var(--muted2);border:1px solid var(--border);}
+
 /* ══ AI PARSER SECTION ══ */
 .parse-result{background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:16px;margin-top:12px;display:none;}
 .parse-result.show{display:block;}
@@ -299,13 +326,38 @@ textarea.inp{resize:none;line-height:1.6;}
 
   <!-- ══ AI PARSE ══ -->
   <div id="p-ai" class="panel on">
+
+    <!-- GEMINI KEY BOX -->
+    <div class="gemini-box" id="gemini-box">
+      <div class="gemini-hd">
+        <div class="gemini-logo">✨</div>
+        <div>
+          <div class="gemini-title">Gemini AI <span id="ai-mode-badge" class="ai-mode-badge regex">REGEX</span></div>
+          <div class="gemini-sub">Kết nối Gemini 2.0 Flash · Miễn phí · Không cần trả tiền</div>
+        </div>
+        <div class="gemini-status no" id="gemini-status">CHƯA KẾT NỐI</div>
+      </div>
+      <div class="key-row">
+        <input class="key-inp" id="gemini-key-inp" type="password" placeholder="Dán Gemini API Key vào đây...">
+        <button class="btn-save-key" onclick="saveGeminiKey()">Lưu</button>
+      </div>
+      <div class="key-hint">
+        🔑 Lấy key miễn phí tại: <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a><br>
+        🔒 Key lưu trên máy bạn (localStorage), không gửi đi đâu ngoài Google.
+      </div>
+    </div>
+
     <div class="card">
-      <div class="card-hd">Paste phân tích từ AI</div>
-      <p style="font-size:12px;color:var(--muted2);line-height:1.7;margin-bottom:12px;">
-        Copy toàn bộ phân tích từ Project AI → Paste vào đây → App tự nhận diện kịch bản, setup, key levels.
+      <div class="card-hd">Nhập dữ liệu thị trường</div>
+      <p style="font-size:12px;color:var(--muted2);line-height:1.7;margin-bottom:12px;" id="ai-instructions">
+        Paste phân tích thủ công từ nơi khác → App dùng regex nhận diện. <b style="color:var(--cyan);">Kết nối Gemini bên trên để AI tự phân tích.</b>
       </p>
-      <textarea class="inp" id="ai-text" rows="6" placeholder="Dán toàn bộ phân tích của AI vào đây...&#10;&#10;Bao gồm: 2 kịch bản, Setup vào lệnh, Alert levels, Key levels..."></textarea>
-      <button class="btn btn-blue" onclick="parseAI()">🤖 Phân tích & Nhận diện</button>
+      <textarea class="inp" id="ai-text" rows="6" placeholder="Dán phân tích thị trường vào đây...&#10;&#10;Có thể paste thô từ TradingView, Telegram, tin tức... Gemini sẽ tự hiểu và trích xuất kịch bản, setup, key levels."></textarea>
+      <div class="ai-loading" id="ai-loading">
+        <div class="spinner"></div>
+        <div class="ai-loading-txt" id="ai-loading-txt">Đang gửi tới Gemini AI...</div>
+      </div>
+      <button class="btn btn-blue" onclick="parseAI()" id="btn-parse">🤖 Phân tích & Nhận diện</button>
     </div>
 
     <div class="parse-result" id="parse-result">
@@ -878,30 +930,195 @@ function sw(n){
   if(n==='ai' && currentAnalysis) showParsed();
 }
 
-// ══ AI PARSER ══
-function parseAI(){
-  const text = document.getElementById('ai-text').value.trim();
-  if(!text){showToast('⚠️ Paste phân tích vào trước');return;}
+// ══ GEMINI KEY MANAGEMENT ══
+let geminiKey = localStorage.getItem('pt2_gemini_key') || '';
 
-  // Nhận diện tài sản TRƯỚC KHI lưu analysis
+function saveGeminiKey() {
+  const inp = document.getElementById('gemini-key-inp');
+  const key = inp.value.trim();
+  if (!key) { showToast('⚠️ Nhập API key trước'); return; }
+  if (!key.startsWith('AIza')) { showToast('⚠️ Key không hợp lệ — phải bắt đầu bằng AIza'); return; }
+  geminiKey = key;
+  localStorage.setItem('pt2_gemini_key', key);
+  inp.value = '';
+  updateGeminiUI(true);
+  showToast('✅ Đã lưu Gemini API Key');
+}
+
+function updateGeminiUI(connected) {
+  const box = document.getElementById('gemini-box');
+  const status = document.getElementById('gemini-status');
+  const badge = document.getElementById('ai-mode-badge');
+  const instr = document.getElementById('ai-instructions');
+  if (connected) {
+    box.classList.add('connected');
+    status.classList.remove('no'); status.classList.add('ok');
+    status.textContent = 'ĐÃ KẾT NỐI';
+    badge.className = 'ai-mode-badge gemini'; badge.textContent = '✨ GEMINI';
+    instr.innerHTML = 'Paste bất kỳ nội dung gì — tin tức, phân tích thô, dữ liệu giá...<br><b style="color:var(--green)">Gemini AI sẽ tự phân tích và trích xuất toàn bộ.</b>';
+  } else {
+    box.classList.remove('connected');
+    status.classList.remove('ok'); status.classList.add('no');
+    status.textContent = 'CHƯA KẾT NỐI';
+    badge.className = 'ai-mode-badge regex'; badge.textContent = 'REGEX';
+    instr.innerHTML = 'Paste phân tích thủ công từ nơi khác → App dùng regex nhận diện. <b style="color:var(--cyan);">Kết nối Gemini bên trên để AI tự phân tích.</b>';
+  }
+}
+
+// Khởi tạo UI theo key đã lưu
+if (geminiKey) updateGeminiUI(true);
+
+// ══ GEMINI API CALL ══
+async function callGemini(text) {
+  const prompt = `Bạn là chuyên gia phân tích trading BTC/crypto/gold. Hãy đọc nội dung bên dưới và trích xuất thông tin giao dịch.
+
+Trả về JSON hợp lệ DUY NHẤT, không có markdown, không có giải thích, không có backtick.
+
+Định dạng JSON bắt buộc:
+{
+  "bias": "BULLISH | BEARISH | NEUTRAL — mô tả ngắn",
+  "meta": "tóm tắt context trong 1-2 câu",
+  "scenarios": [
+    {"id":"sc1","type":"bull","pct":65,"name":"Tên kịch bản bull","path":"Mô tả path giá tăng"},
+    {"id":"sc2","type":"bear","pct":35,"name":"Tên kịch bản bear","path":"Mô tả path giá giảm"}
+  ],
+  "setups": [
+    {
+      "name":"Setup A — LONG tại vùng hỗ trợ",
+      "direction":"long",
+      "entry":"82000",
+      "sl":"79500",
+      "tp1":"86000",
+      "tp2":"89000",
+      "rr":"2.5",
+      "size":"1% vốn",
+      "prio":"CAO"
+    }
+  ],
+  "keyLevels": ["$82,000","$79,500","$86,000"],
+  "alerts": ["Alert: Giá phá $82,000 → Xác nhận bull"]
+}
+
+Lưu ý:
+- entry/sl/tp1/tp2 là số nguyên (string), không có dấu phẩy
+- pct trong scenarios cộng lại phải = 100
+- direction chỉ là "long" hoặc "short"
+- Nếu không tìm thấy setup cụ thể, để mảng setups rỗng []
+- Phân tích ngôn ngữ tiếng Việt hoặc tiếng Anh đều được
+
+Nội dung cần phân tích:
+${text}`;
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 1500 }
+      })
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = err?.error?.message || `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+
+  const data = await res.json();
+  const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  // Strip possible markdown fences
+  const clean = raw.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+  const parsed = JSON.parse(clean);
+  return parsed;
+}
+
+// ══ AI PARSER ══
+async function parseAI(){
+  const text = document.getElementById('ai-text').value.trim();
+  if(!text){showToast('⚠️ Paste nội dung vào trước');return;}
+
   const asset = detectAsset(text);
   setCurrentAsset(asset);
 
-  const analysis = extractAnalysis(text);
-  analysis.raw = text; // Lưu raw text để debug
-  currentAnalysis = analysis;
-  localStorage.setItem('pt2_analysis', JSON.stringify(analysis));
-  showParsed();
+  const btn = document.getElementById('btn-parse');
+  const loading = document.getElementById('ai-loading');
 
-  // Khởi động price engine với tài sản mới
+  // Dùng Gemini nếu có key
+  if (geminiKey) {
+    btn.disabled = true; btn.style.opacity = '0.5';
+    loading.classList.add('show');
+    document.getElementById('ai-loading-txt').textContent = 'Gemini đang phân tích...';
+
+    try {
+      const result = await callGemini(text);
+      // Map Gemini result sang format app
+      const analysis = {
+        bias: result.bias || '',
+        meta: result.meta || '',
+        scenarios: (result.scenarios || []).map(sc => ({
+          id: sc.id || ('sc'+(Math.random()*9|0+1)),
+          type: sc.type || 'bull',
+          pct: sc.pct || '?',
+          name: (sc.name || 'Kịch bản').slice(0,30),
+          path: (sc.path || '').slice(0,120)
+        })),
+        setups: (result.setups || []).map(s => ({
+          name: (s.name || 'Setup').slice(0,60),
+          direction: s.direction === 'short' ? 'short' : 'long',
+          entry: s.entry ? String(s.entry).replace(/,/g,'') : null,
+          sl: s.sl ? String(s.sl).replace(/,/g,'') : null,
+          tp1: s.tp1 ? String(s.tp1).replace(/,/g,'') : null,
+          tp2: s.tp2 ? String(s.tp2).replace(/,/g,'') : null,
+          rr: s.rr || null,
+          size: s.size || null,
+          prio: s.prio || null
+        })),
+        keyLevels: result.keyLevels || [],
+        alerts: result.alerts || [],
+        raw: text,
+        source: 'gemini'
+      };
+      // Đảm bảo có đủ 2 scenarios
+      if (analysis.scenarios.length < 2) {
+        if (!analysis.scenarios.find(s=>s.type==='bull')) analysis.scenarios.unshift({id:'sc1',type:'bull',pct:'?',name:'Kịch bản Bull',path:'—'});
+        if (!analysis.scenarios.find(s=>s.type==='bear')) analysis.scenarios.push({id:'sc2',type:'bear',pct:'?',name:'Kịch bản Bear',path:'—'});
+      }
+      currentAnalysis = analysis;
+      localStorage.setItem('pt2_analysis', JSON.stringify(analysis));
+      showParsed();
+      showToast('✨ Gemini đã phân tích xong!');
+    } catch(e) {
+      console.error('Gemini error:', e);
+      // Fallback sang regex nếu Gemini lỗi
+      const analysis = extractAnalysis(text);
+      analysis.raw = text;
+      currentAnalysis = analysis;
+      localStorage.setItem('pt2_analysis', JSON.stringify(analysis));
+      showParsed();
+      showToast('⚠️ Gemini lỗi — dùng regex. ' + (e.message||'').slice(0,40));
+    } finally {
+      btn.disabled = false; btn.style.opacity = '1';
+      loading.classList.remove('show');
+    }
+  } else {
+    // Không có key → regex như cũ
+    const analysis = extractAnalysis(text);
+    analysis.raw = text;
+    currentAnalysis = analysis;
+    localStorage.setItem('pt2_analysis', JSON.stringify(analysis));
+    showParsed();
+    showToast('✅ Nhận diện xong (regex mode)');
+  }
+
+  // Khởi động price engine
   if (asset) {
-    lastPrices = {}; // Reset giá cũ
-    shownAlerts.clear();
+    lastPrices = {}; shownAlerts.clear();
     startPriceEngine();
     const assetLabel = asset === 'GOLD' ? 'Vàng (XAUUSD)' : asset + '/USDT';
-    showToast(`✅ Nhận diện xong · Đang theo dõi ${assetLabel}`);
-  } else {
-    showToast('✅ Đã nhận diện · Không rõ tài sản — nhập giá thủ công');
+    if (!geminiKey) showToast('✅ Nhận diện xong · Đang theo dõi ' + assetLabel);
   }
 }
 

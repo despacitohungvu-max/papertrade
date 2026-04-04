@@ -617,15 +617,51 @@ textarea.inp{resize:none;line-height:1.6;}
 </button>
 
 <!-- ══ AI MENTOR PANEL ══ -->
+<style>
+.skill-matrix{display:flex;flex-wrap:wrap;gap:5px;padding:10px 12px;background:rgba(0,212,255,.03);border-bottom:1px solid var(--border);}
+.skill-chip{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:9px;font-weight:600;padding:3px 8px;border-radius:20px;border:1px solid;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.skill-chip.active{background:rgba(0,240,160,.12);border-color:rgba(0,240,160,.4);color:var(--green);}
+.skill-chip.inactive{background:var(--s2);border-color:var(--border2);color:var(--muted2);}
+.skill-chip .sc-dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.skill-chip.active .sc-dot{box-shadow:0 0 4px currentColor;}
+.mentor-context-bar{padding:8px 12px;background:rgba(0,0,0,.2);border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.ctx-tag{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:4px;font-weight:600;}
+.ctx-tag.has{background:rgba(0,240,160,.1);color:var(--green);border:1px solid rgba(0,240,160,.2);}
+.ctx-tag.no{background:var(--s3);color:var(--muted);border:1px solid var(--border);}
+.ctx-label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+</style>
 <div class="mentor-panel" id="mentor-panel">
   <div class="mentor-hd">
     <div class="mentor-hd-ico">🧠</div>
     <div class="mentor-hd-info">
-      <div class="mentor-hd-name">AI Mentor Trading</div>
+      <div class="mentor-hd-name">AI Mentor <span style="font-size:10px;color:var(--cyan);font-family:var(--mono);">v4 · Skills</span></div>
       <div class="mentor-hd-status" id="mentor-status">● Sẵn sàng tư vấn</div>
     </div>
     <div class="mentor-close" onclick="closeMentor()">✕</div>
   </div>
+
+  <!-- SKILL MATRIX — Hiển thị knowledge đang được nạp -->
+  <div class="skill-matrix" id="skill-matrix">
+    <span class="ctx-label" style="width:100%;margin-bottom:2px;">⚡ Knowledge Skills đang active:</span>
+    <div class="skill-chip active" title="Wyckoff 4-Phase Method"><span class="sc-dot"></span>Wyckoff</div>
+    <div class="skill-chip active" title="SMC: OB, FVG, Liquidity, BOS/ChoCh"><span class="sc-dot"></span>SMC</div>
+    <div class="skill-chip active" title="On-chain: Funding, OI, MVRV, NUPL"><span class="sc-dot"></span>On-chain</div>
+    <div class="skill-chip active" title="DXY, Fed Policy, Macro Correlations"><span class="sc-dot"></span>Macro</div>
+    <div class="skill-chip active" title="Position Sizing, Drawdown, Risk Rules"><span class="sc-dot"></span>Risk Mgmt</div>
+    <div class="skill-chip active" title="3 Setup chuẩn, Entry Execution"><span class="sc-dot"></span>Execution</div>
+    <div class="skill-chip active" title="FOMO, Revenge, 4-Quadrant, Checklist"><span class="sc-dot"></span>Psychology</div>
+    <div class="skill-chip active" id="sk-journal" title="Journal pattern analysis"><span class="sc-dot"></span>Journal AI</div>
+  </div>
+
+  <!-- CONTEXT BAR — Những gì AI đang thấy từ app -->
+  <div class="mentor-context-bar" id="ctx-bar">
+    <span class="ctx-label">Context:</span>
+    <span class="ctx-tag no" id="ctx-analysis">Chưa có phân tích</span>
+    <span class="ctx-tag no" id="ctx-open">0 lệnh mở</span>
+    <span class="ctx-tag no" id="ctx-history">0 lịch sử</span>
+    <span class="ctx-tag no" id="ctx-price">Chưa có giá</span>
+  </div>
+
   <div class="mentor-mode-row">
     <div class="mmode on" onclick="setMentorMode('chat',this)">💬 Hỏi đáp</div>
     <div class="mmode" onclick="setMentorMode('review',this)">📊 Review lệnh</div>
@@ -641,6 +677,8 @@ textarea.inp{resize:none;line-height:1.6;}
     <div class="qbtn" onclick="quickAsk('Phân tích lịch sử trade của tôi và chỉ ra sai lầm')">🔬 Phân tích lỗi</div>
     <div class="qbtn" onclick="quickAsk('FVG là gì? Khác OB như nào?')">📖 FVG vs OB</div>
     <div class="qbtn" onclick="quickAsk('Tôi đang FOMO không? Hãy check tâm lý tôi')">🧘 Check tâm lý</div>
+    <div class="qbtn" onclick="quickAsk('Drawdown hiện tại của tôi có đáng lo không? Cần điều chỉnh gì?')">📉 Check Drawdown</div>
+    <div class="qbtn" onclick="quickAsk('Chạy Pre-Trade Checklist cho tôi dựa trên setup đang theo dõi')">✅ Pre-Trade Check</div>
   </div>
   <div class="mentor-inp-row">
     <textarea class="mentor-inp" id="mentor-inp" placeholder="Hỏi Mentor bất cứ điều gì..." rows="1"
@@ -904,6 +942,8 @@ function updateTicker(asset, data, zone) {
   if (el) el.textContent = timeStr;
 
   lastPrices[asset] = data.price;
+  // Cập nhật context bar khi có giá mới
+  if(mentorOpen) updateContextBar();
 }
 
 // Hiện alert banner
@@ -1324,6 +1364,8 @@ async function parseAI(){
     lastPrices = {}; shownAlerts.clear();
     startPriceEngine();
   }
+  // Sync context bar với analysis mới
+  setTimeout(updateContextBar, 200);
 }
 
 function extractAnalysis(text){
@@ -1934,7 +1976,11 @@ function updateHeader(){
 }
 
 // ══ SAVE ══
-function save(){localStorage.setItem('pt2_trades',JSON.stringify(trades));updateHeader();}
+function save(){
+  localStorage.setItem('pt2_trades',JSON.stringify(trades));
+  updateHeader();
+  updateContextBar(); // Sync context bar bất cứ khi nào data thay đổi
+}
 
 // ══ TOAST ══
 function showToast(msg){
@@ -1945,6 +1991,7 @@ function showToast(msg){
 
 updateHeader();
 renderOpen();
+setTimeout(updateContextBar, 300); // Khởi tạo context bar sau khi DOM sẵn sàng
 if(currentAnalysis) {
   showParsed();
   if (currentAsset) {
@@ -1971,80 +2018,280 @@ let mentorMsgs = []; // {role, content, time}
 let mentorTyping = false;
 let mentorGreeted = false;
 
-// Build context từ toàn bộ app state
+// ══════════════════════════════════════════════════════
+// BUILD MENTOR CONTEXT — Đọc toàn bộ app state
+// AI sẽ biết chính xác những gì đang diễn ra
+// ══════════════════════════════════════════════════════
 function buildMentorContext() {
   const closed = trades.filter(t=>t.status==='closed');
   const open = trades.filter(t=>t.status==='open');
   const wins = closed.filter(t=>t.result==='win');
   const losses = closed.filter(t=>t.result==='loss');
-  const wr = closed.length ? ((wins.length/closed.length)*100).toFixed(0) : null;
+  const be = closed.filter(t=>t.result==='be');
+  const wr = closed.length ? ((wins.length/closed.length)*100).toFixed(1) : null;
   const pnl = closed.reduce((s,t)=>s+(t.pnl||0),0);
+  const avgW = wins.length ? (wins.reduce((s,t)=>s+t.pnl,0)/wins.length).toFixed(0) : 0;
+  const avgL = losses.length ? (losses.reduce((s,t)=>s+t.pnl,0)/losses.length).toFixed(0) : 0;
+  const pf = losses.length && avgL ? Math.abs(wins.reduce((s,t)=>s+t.pnl,0) / losses.reduce((s,t)=>s+t.pnl,0)).toFixed(2) : null;
 
-  let ctx = `=== CONTEXT APP PAPER TRADE ===\n`;
-  ctx += `Ngày: ${new Date().toLocaleDateString('vi-VN')}\n`;
+  // Phân tích chuỗi hiện tại
+  const sorted = [...closed].reverse();
+  let streak = 0; let streakType = null;
+  for(const t of sorted){
+    if(!streakType){ streakType = t.result; streak = 1; }
+    else if(t.result===streakType) streak++;
+    else break;
+  }
+  const streakEmoji = streakType==='win'?'🟢 Đang thắng':streakType==='loss'?'🔴 Đang thua':'⚖️ Đang hòa';
+  const streakMsg = closed.length ? `${streakEmoji} ${streak} lệnh liên tiếp` : 'Chưa có lệnh';
 
-  if (currentAnalysis) {
-    ctx += `\n--- PHÂN TÍCH THỊ TRƯỜNG HIỆN TẠI ---\n`;
-    ctx += `Bias: ${currentAnalysis.bias||'Chưa xác định'}\n`;
-    ctx += `Kịch bản active: ${activeScenario||'Chưa chọn'}\n`;
-    if (currentAnalysis.setups?.length) {
-      ctx += `Setups đang theo dõi:\n`;
+  // Phân tích setup win rate
+  const setupMap = {};
+  closed.forEach(t=>{
+    if(!setupMap[t.setup]) setupMap[t.setup]={w:0,l:0,be:0,tot:0};
+    setupMap[t.setup].tot++;
+    if(t.result==='win') setupMap[t.setup].w++;
+    else if(t.result==='loss') setupMap[t.setup].l++;
+    else setupMap[t.setup].be++;
+  });
+
+  // Phát hiện pattern thua
+  const warningFlags = [];
+  if(streak>=2 && streakType==='loss') warningFlags.push(`⚠️ CHUỖI THUA ${streak} LỆNH — Cần giảm size hoặc nghỉ review`);
+  if(wr && parseFloat(wr)<40) warningFlags.push(`⚠️ WIN RATE ${wr}% — Dưới ngưỡng tối thiểu 40%`);
+  if(pf && parseFloat(pf)<1.0) warningFlags.push(`⚠️ PROFIT FACTOR ${pf} — Dưới 1.0, đang thua dài hạn`);
+  // Phát hiện trend ngược weekly
+  const wrongTrendTrades = closed.filter(t => t.reason && (t.reason.toLowerCase().includes('ngược') || t.reason.toLowerCase().includes('counter')));
+  if(wrongTrendTrades.length>=2){
+    const wrongWins = wrongTrendTrades.filter(t=>t.result==='win').length;
+    const wrongWR = ((wrongWins/wrongTrendTrades.length)*100).toFixed(0);
+    if(parseFloat(wrongWR)<40) warningFlags.push(`⚠️ Lệnh ngược trend: chỉ thắng ${wrongWR}% (${wrongWins}/${wrongTrendTrades.length}) — Nên dừng`);
+  }
+  // Drawdown check
+  const capitalRef = open.length ? open[0].capital : (closed.length ? closed[0].capital : null);
+  if(capitalRef && pnl < 0){
+    const ddPct = Math.abs(pnl/capitalRef*100).toFixed(1);
+    if(parseFloat(ddPct)>=20) warningFlags.push(`🚨 DRAWDOWN ${ddPct}% — Cần giảm size 50% ngay theo risk rules`);
+    if(parseFloat(ddPct)>=30) warningFlags.push(`🚨 DRAWDOWN ${ddPct}% — DỪNG TRADE, review toàn bộ hệ thống`);
+  }
+
+  let ctx = `=== CONTEXT LIVE — PAPER TRADE PRO ===\n`;
+  ctx += `Thời gian: ${new Date().toLocaleString('vi-VN')}\n`;
+
+  // CẢNH BÁO QUAN TRỌNG (nếu có)
+  if(warningFlags.length){
+    ctx += `\n🚨 CẢNH BÁO MENTOR CẦN ĐỌC NGAY:\n`;
+    warningFlags.forEach(w => ctx += `${w}\n`);
+  }
+
+  // GIÁ LIVE
+  if(lastPrices[currentAsset]){
+    ctx += `\n--- GIÁ LIVE ---\n`;
+    ctx += `${currentAsset}: $${lastPrices[currentAsset]?.toLocaleString()} (đang theo dõi)\n`;
+  }
+
+  // PHÂN TÍCH THỊ TRƯỜNG ĐANG ACTIVE
+  if(currentAnalysis){
+    ctx += `\n--- PHÂN TÍCH THỊ TRƯỜNG ĐANG ACTIVE ---\n`;
+    ctx += `BIAS: ${currentAnalysis.bias||'Chưa xác định'}\n`;
+    ctx += `Kịch bản đã chọn: ${activeScenario||'Chưa chọn kịch bản'}\n`;
+    if(currentAnalysis.setups?.length){
+      ctx += `Setups đang theo dõi (${currentAnalysis.setups.length} setup):\n`;
       currentAnalysis.setups.forEach(s=>{
-        ctx += `  • ${s.name} (${s.direction.toUpperCase()}) Entry:$${s.entry} SL:$${s.sl} TP1:$${s.tp1} TP2:$${s.tp2} RR:1:${s.rr}\n`;
+        const lp = lastPrices[currentAsset];
+        let distNote = '';
+        if(lp && s.entry){
+          const distPct = ((lp - parseFloat(s.entry)) / parseFloat(s.entry) * 100).toFixed(1);
+          distNote = ` [Giá hiện tại ${distPct>0?'+':''}${distPct}% so với entry]`;
+        }
+        ctx += `  • ${s.name} (${s.direction?.toUpperCase()}) Entry:$${s.entry} SL:$${s.sl} TP1:$${s.tp1} TP2:$${s.tp2} RR:1:${s.rr}${distNote}\n`;
       });
     }
-    if (currentAnalysis.meta) ctx += `Context: ${currentAnalysis.meta.slice(0,300)}\n`;
+    if(currentAnalysis.invalidation) ctx += `Invalidation level: ${currentAnalysis.invalidation}\n`;
+    if(currentAnalysis.keyLevels?.length) ctx += `Key levels: ${currentAnalysis.keyLevels.join(', ')}\n`;
+    if(currentAnalysis.meta) ctx += `Thêm context: ${currentAnalysis.meta.slice(0,400)}\n`;
   }
 
-  if (open.length) {
+  // LỆNH ĐANG MỞ
+  if(open.length){
     ctx += `\n--- LỆNH ĐANG MỞ (${open.length} lệnh) ---\n`;
     open.forEach(t=>{
-      const livePrice = lastPrices[currentAsset] || null;
-      const floatPnL = livePrice ? ((t.direction==='long'?livePrice-t.entry:t.entry-livePrice)/Math.abs(t.entry-t.sl)*(t.capital*t.risk/100)).toFixed(2) : null;
-      ctx += `  #${t.id} ${t.direction.toUpperCase()} ${t.asset} | Entry:$${t.entry} SL:$${t.sl} TP1:$${t.tp1}\n`;
-      ctx += `    Setup:${t.setup} | Lý do:${t.reason?.slice(0,80)}\n`;
-      if (floatPnL) ctx += `    Float P&L ước tính: ${floatPnL>0?'+':''}$${floatPnL}\n`;
+      const lp = lastPrices[currentAsset];
+      let floatNote = '';
+      if(lp && t.entry && t.sl){
+        const diff = t.direction==='long' ? lp-t.entry : t.entry-lp;
+        const riskDist = Math.abs(t.entry-t.sl);
+        const floatR = (diff/riskDist).toFixed(2);
+        const floatUSD = (t.capital*(t.risk/100)*(diff/riskDist)).toFixed(0);
+        floatNote = ` | Float: ${diff>=0?'+':''}$${floatUSD} (${floatR}R)`;
+      }
+      ctx += `  #${t.id} ${t.direction?.toUpperCase()} ${t.asset} | E:$${t.entry} SL:$${t.sl} TP1:$${t.tp1} TP2:$${t.tp2}${floatNote}\n`;
+      ctx += `     Setup:${t.setup} | KB:${t.scenario||'—'} | Tuần:${t.week||'—'}\n`;
+      if(t.reason) ctx += `     Lý do: ${t.reason.slice(0,120)}\n`;
     });
   }
 
-  if (closed.length) {
-    ctx += `\n--- THỐNG KÊ TRADING ---\n`;
-    ctx += `Tổng lệnh: ${closed.length} | Thắng: ${wins.length} | Thua: ${losses.length}\n`;
-    ctx += `Win Rate: ${wr||'?'}% | Net P&L: ${pnl>=0?'+':''}$${pnl.toFixed(0)}\n`;
-    const recent = [...closed].reverse().slice(0,5);
-    ctx += `5 lệnh gần nhất:\n`;
+  // THỐNG KÊ TỔNG
+  if(closed.length){
+    ctx += `\n--- THỐNG KÊ TỔNG (${closed.length} lệnh đã đóng) ---\n`;
+    ctx += `Win Rate: ${wr}% (${wins.length}W ${losses.length}L ${be.length}BE)\n`;
+    ctx += `Net P&L: ${pnl>=0?'+':''}$${pnl.toFixed(0)} | Avg Win:+$${avgW} | Avg Loss:$${avgL}\n`;
+    if(pf) ctx += `Profit Factor: ${pf} ${parseFloat(pf)>=1.5?'✅ Tốt':parseFloat(pf)>=1.0?'⚠️ Trung bình':'❌ Dưới ngưỡng'}\n`;
+    ctx += `Chuỗi hiện tại: ${streakMsg}\n`;
+
+    // Setup performance
+    ctx += `\nHiệu quả theo Setup:\n`;
+    Object.entries(setupMap).forEach(([s,v])=>{
+      const wr = ((v.w/v.tot)*100).toFixed(0);
+      const wrIcon = v.tot>=3 ? (parseFloat(wr)>=55?'✅':parseFloat(wr)>=40?'⚠️':'❌') : '';
+      ctx += `  ${s}: ${v.w}W/${v.l}L — WR ${wr}% ${wrIcon}\n`;
+    });
+
+    // 8 lệnh gần nhất với bài học
+    const recent = [...closed].reverse().slice(0,8);
+    ctx += `\n${recent.length} lệnh gần nhất:\n`;
     recent.forEach(t=>{
-      ctx += `  ${t.result==='win'?'✅':'❌'} #${t.id} ${t.direction.toUpperCase()} ${t.asset} | P&L:${t.pnl>0?'+':''}$${t.pnl} | RR:${t.rrActual} | Setup:${t.setup}\n`;
-      if(t.lesson) ctx += `    Bài học: ${t.lesson}\n`;
+      const icon = t.result==='win'?'✅':t.result==='loss'?'❌':'⚖️';
+      ctx += `  ${icon} #${t.id} ${t.direction?.toUpperCase()} ${t.asset} | ${t.pnl>=0?'+':''}$${t.pnl} | RR:${t.rrActual} | Setup:${t.setup}\n`;
+      if(t.reason) ctx += `     Lý do vào: ${t.reason.slice(0,80)}\n`;
+      if(t.lesson) ctx += `     Bài học: ${t.lesson}\n`;
     });
-  }
-
-  if (lastPrices[currentAsset]) {
-    ctx += `\n--- GIÁ HIỆN TẠI ---\n`;
-    ctx += `${currentAsset}: $${lastPrices[currentAsset]?.toLocaleString()}\n`;
   }
 
   return ctx;
 }
 
-// System prompt theo mode
-function buildMentorSystem(mode) {
-  const base = `Bạn là AI Mentor Trading chuyên nghiệp, chuyên về ICT/SMC (Inner Circle Trader / Smart Money Concepts), Price Action, và quản lý rủi ro. Bạn có phong cách tư vấn như một trader kỳ cựu 10+ năm — thẳng thắn, thực tế, không nói chung chung, luôn dựa trên data cụ thể từ lịch sử trade của người dùng.
+// ══════════════════════════════════════════════════════
+// KNOWLEDGE BASE — Nhúng trực tiếp từ bộ tài liệu
+// ══════════════════════════════════════════════════════
+const SKILL_IDENTITY = `
+VAI TRÒ: Bạn là AI Mentor Trading tích hợp 4 chuyên gia:
+1. Wyckoff Analyst — đọc cấu trúc thị trường và hành vi tổ chức
+2. SMC Analyst — phân tích Smart Money Concepts: OB, FVG, Liquidity
+3. On-chain Analyst — đọc dữ liệu blockchain xác nhận bias
+4. Risk Manager — bảo vệ vốn là ưu tiên số 1
 
-Nguyên tắc trả lời:
-- LUÔN dựa vào context data thực tế của người dùng (setups, lịch sử lệnh, bias hiện tại)
-- Chỉ ra con số cụ thể, không nói mơ hồ
-- Tone như mentor thân thiện nhưng không nịnh hót — khi sai thì nói thẳng
-- Trả lời bằng tiếng Việt, ngắn gọn súc tích phù hợp mobile
-- Dùng emoji để nhấn mạnh điểm quan trọng
-- Tối đa 200 từ mỗi câu trả lời, trừ khi được hỏi giải thích chi tiết\n\n`;
+NGUYÊN TẮC BẮT BUỘC (không được vi phạm):
+• Không đưa lời khuyên mua/bán trực tiếp. ĐÚNG: "Cấu trúc thuận lợi cho long nếu giữ $X"
+• Luôn đề cập RỦI RO trước cơ hội — nêu kịch bản sai + invalidation level
+• Phân tích đa khung: Weekly→Daily→4H→1H. Bias cao hơn ưu tiên hơn
+• Kết thúc phân tích bằng cấu trúc: BIAS / Kịch bản chính% / Kịch bản phụ% / Invalidation / Key levels
+• Không phân tích bằng cảm xúc — chỉ dựa cấu trúc giá, khối lượng, on-chain, macro
+• Khi dữ liệu mâu thuẫn: nói thẳng "Tín hiệu chưa rõ ràng, cần thêm X"`;
+
+const SKILL_WYCKOFF = `
+WYCKOFF METHOD:
+Accumulation: CO mua khi retail sợ. Dấu hiệu: SC(dump+volume cao)→AR→ST(volume thấp hơn SC)→Spring(fake breakdown)→SOS(breakout+volume). Lỗi: Mua lúc SC (đúng hướng nhưng chưa đáy). Chờ Spring+SOS.
+Markup: HH+HL liên tục. Pullback volume thấp hơn impulse. BUEC là retest breakout.
+Distribution: CO bán khi retail hưng phấn. BC(spike+volume cao)→AR→UT(fake breakout lên)→SOW(breakdown+volume). Lỗi phổ biến nhất: Mua vào lúc Upthrust.
+Markdown: LH+LL liên tục. Dead cat bounce = bẫy.`;
+
+const SKILL_SMC = `
+SMART MONEY CONCEPTS:
+Market Structure: BOS=xác nhận trend tiếp tục (KHÔNG phải đảo chiều). ChoCh=cảnh báo đảo chiều sớm lần đầu tiên.
+Order Block: Bullish OB=nến giảm CUỐI CÙNG trước impulse tăng gây BOS. Entry tại OB, SL dưới đáy. Invalid khi giá close bên trong OB. Bearish OB ngược lại.
+Breaker Block: OB bị mitigate→đổi vai (support thành resistance và ngược lại).
+FVG (Fair Value Gap): Khoảng trống bóng nến 1 và nến 3 trong impulse mạnh. Bullish FVG=support khi retrace. Bearish FVG=resistance. FVG fill 50% thường đủ để bounce.
+Liquidity: BSL(Buy-side)=TRÊN đỉnh cũ/equal highs/stop của short sellers. SSL(Sell-side)=DƯỚI đáy cũ/equal lows/stop của long holders. Smart money target liquidity để sweep rồi đảo chiều.
+Inducement(IDM): Đỉnh/đáy nhỏ tạo ra dụ retail vào sai trước đảo chiều thực.
+Premium/Discount: 0-50%=Discount(vùng mua). 50%=Equilibrium. 50-100%=Premium(vùng bán). Tìm Bullish OB/FVG trong Discount. Tìm Bearish OB/FVG trong Premium.`;
+
+const SKILL_ONCHAIN = `
+ON-CHAIN METRICS:
+Exchange Net Flow: Âm(outflow)=holder rút BTC khỏi sàn→BULLISH. Dương(inflow)=gửi vào sàn chuẩn bị bán→BEARISH.
+Funding Rate: 0.01-0.05%/8h=bình thường. >0.10%/8h=overleveraged long→long squeeze rủi ro. <-0.05%=overleveraged short→short squeeze có thể. Giá tăng+Funding thấp=spot-driven=bền vững hơn leverage-driven.
+Open Interest: OI tăng+Giá tăng=trend healthy. OI cao cực=volatile, dễ wick liquidation lớn.
+Long/Short Ratio: >60% Long=rủi ro cascade liquidation. >60% Short=điều kiện short squeeze.
+MVRV Ratio: <1.0=undervalued(đáy cycle lịch sử). 1-2=fair value. 2-3.7=overvalued cẩn thận. >3.7=historically near top.
+NUPL: <0=capitulation(đáy). 0.5-0.75=belief/uptrend mạnh. >0.75=euphoria(near top).
+Fear&Greed: 0-24=Extreme Fear(good buy zone lịch sử). 75-100=Extreme Greed(near top).
+Hash Ribbon: 30d cắt dưới 60d=miner capitulation=buying signal lịch sử.
+BTC.D tăng=vốn vào BTC risk-off. BTC.D giảm=alt season.`;
+
+const SKILL_MACRO = `
+MACRO CORRELATIONS:
+BTC & DXY: Tương quan nghịch ~60-70%. DXY tăng→BTC giảm. Ngoại lệ: event crypto-specific.
+Fed Policy: Rate hike=bearish. Rate cut=bullish. QE=very bullish. QT=bearish. 48h quanh FOMC=volatile bất thường. Hawkish hơn kỳ vọng→risk-off. Dovish hơn→risk-on.
+BTC & S&P/NASDAQ: Correlation ~0.55 từ 2020. BTC hành xử như "tech growth asset". S&P giảm >2%/ngày→BTC thường giảm theo.
+Events: FOMC(8x/năm, impact CAO). CPI(hàng tháng, CPI cao→hawkish pressure). NFP(thứ 6 đầu tháng, impact trung bình). Options Expiry(thứ 6 cuối tháng 8:00 UTC, quarterly>monthly).
+Crypto Catalysts: Rất tích cực: ETF approval, Halving, Institutional adoption, Regulatory clarity. Rất tiêu cực: Exchange collapse, Country ban, Stablecoin depeg.`;
+
+const SKILL_RISK = `
+RISK MANAGEMENT (BẮT BUỘC):
+Position Size = (Vốn × Risk%) ÷ Distance_to_Stop. Ví dụ: $10K×1%÷$2K=0.05 BTC.
+Giới hạn tuyệt đối: Max risk/trade=1-2% vốn. Max/ngày=3-5%. Max/tuần=6-8%. Chạm max ngày→DỪNG.
+R:R tối thiểu 1:2. 40%WR×RR1:3=SINH LỜI. 70%WR×RR0.8=DỄ PHÁ TÀIUẢN.
+Drawdown Recovery: -25%→cần+33%. -50%→cần+100%. -75%→cần+300%.
+Rule: Drawdown 20%→giảm size 50%. Drawdown 30%→dừng, review toàn bộ.
+BTC Rules đặc thù: Funding>0.1% khi muốn Long→giảm size 50%. Exchange inflow đột biến→đóng Long ngay. Không giữ leverage qua đêm khi OI cực cao. Không trade 2h đầu sau CME open thứ 2.
+Weekly Bear+muốn Long→0.5% vốn. Sau 2 lệnh thua→0.25% vốn.`;
+
+const SKILL_EXECUTION = `
+EXECUTION FRAMEWORK — 3 SETUP CHUẨN:
+SETUP 1 — OB RETEST: Cần đủ 3/4: Nến đảo chiều rõ (Hammer/Engulfing/Doji wick dài). Volume nến xác nhận>2x TB 10 nến trước. RSI 1H divergence hoặc về 30 khi long. Funding âm khi long.
+SETUP 2 — FVG FILL: FVG trên 4H+ quan trọng hơn. Fill FVG 50% đủ để bounce. Kết hợp với OB gần FVG = high probability.
+SETUP 3 — LIQUIDITY SWEEP+REACTION: Giá sweep equal lows/highs→nến rejection mạnh→BOS nhỏ theo hướng mới. Entry: sau nến BOS nhỏ. SL: bên dưới điểm sweep.
+
+ĐIỀU KIỆN KHÔNG BAO GIỜ VÀO LỆNH: Giá ở No Man's Land giữa 2 vùng. Volume thấp hơn trung bình. 2h trước/sau FOMC/CPI/NFP. Daily trend mâu thuẫn 4H. Chưa có SL rõ ràng. R:R<1:2. Đã thua 2 lệnh liên tiếp. Funding>0.1% khi muốn long.
+
+QUẢN LÝ LỆNH SAU VÀO: Sau TP1(50%)→dời SL về breakeven. Còn 50%→trailing theo EMA20 4H.`;
+
+const SKILL_PSYCH = `
+TÂM LÝ & 5 TRẠNG THÁI NGUY HIỂM:
+FOMO: Chase giá sau move xa→Rule: Không vào nếu nến đã di chuyển>50% từ setup point.
+Revenge Trading: Muốn lấy lại tiền ngay→Rule: Sau 2 trade thua liên tiếp=đóng máy 2 giờ.
+Overconfidence: Sau chuỗi thắng→Rule: Size không thay đổi theo cảm xúc.
+Paralysis: Thấy setup nhưng không dám vào→Fix: Giảm size xuống mức không còn sợ.
+Boredom Trading: Vào lệnh vì không có gì làm→Fix: Chuẩn bị danh sách việc thay thế.
+
+4-QUADRANT REVIEW: Đúng+Thắng=Lý tưởng→tiếp tục. SAI+Thắng=MAY MẮN NGUY HIỂM→cảnh báo đỏ. Đúng+Thua=Bình thường→không điều chỉnh hệ thống. SAI+Thua=Nguy hiểm→phân tích và thay đổi ngay.
+
+PRE-TRADE CHECKLIST (tất cả phải YES): Setup có trong trading plan? Entry dựa cấu trúc không chase? SL có lý do kỹ thuật? Risk≤2%? R:R≥1:2? Bias timeframe cao hơn hỗ trợ? Không đang trade lấy lại tiền? Không FOMO? Không có macro lớn trong 4h? Chưa chạm max loss ngày?`;
+
+const SKILL_JOURNAL_RULES = `
+QUY TẮC ĐỌC JOURNAL & PATTERN NHẬN BIẾT:
+Khi user hỏi về setup mới hoặc lệnh đang mở:
+1. CHECK CHUỖI: Đang trong chuỗi thắng/thua mấy lệnh? Chuỗi thua 2+→nhắc giảm size.
+2. NHẬN XÉT PATTERN: Setup X của bạn có win rate Y%→tốt/cần cải thiện. Lệnh ngược Weekly trend chỉ thắng Z%→thận trọng.
+3. SO SÁNH LỊCH SỬ: Setup này giống lệnh #X vì [lý do]. On-chain lần này giống/khác lần thắng trước.
+4. ĐIỀU CHỈNH: Win rate<40%→cần review điều kiện vào. R:R thực tế<kế hoạch→đang chốt lời quá sớm. Nhiều lệnh thua do FOMO→kiểm tra checklist tâm lý.
+
+OUTPUT FORMAT CHUẨN (kết thúc phân tích thị trường):
+BIAS: [BULLISH/BEARISH/NEUTRAL]
+Kịch bản 1—[TÊN](X%): [Điều kiện kích hoạt]→[Target]
+Kịch bản 2—[TÊN](Y%): [Điều kiện kích hoạt]→[Target]
+Invalidation: $[Mức]—[Lý do]
+Key levels: [3-5 mức quan trọng nhất]
+⚠️ Rủi ro trước mắt: [nếu có]`;
+
+// Build full knowledge base
+const FULL_KNOWLEDGE_BASE = [
+  SKILL_IDENTITY, SKILL_WYCKOFF, SKILL_SMC, SKILL_ONCHAIN,
+  SKILL_MACRO, SKILL_RISK, SKILL_EXECUTION, SKILL_PSYCH, SKILL_JOURNAL_RULES
+].join('\n\n---\n');
+
+// System prompt theo mode — bây giờ mang theo toàn bộ knowledge base
+function buildMentorSystem(mode) {
+  const base = `${FULL_KNOWLEDGE_BASE}
+
+PHONG CÁCH GIAO TIẾP:
+• Ngôn ngữ: Tiếng Việt. Thuật ngữ kỹ thuật giữ nguyên tiếng Anh (OB, FVG, BOS, ChoCh...)
+• Giọng điệu: Chuyên nghiệp, thẳng thắn, không hoa mỹ, không câu khách
+• Độ dài: Ngắn gọn phù hợp mobile (≤250 từ trừ khi được yêu cầu chi tiết)
+• Dùng emoji có chọn lọc để nhấn mạnh
+• LUÔN dựa vào data thực tế của người dùng trong context — không nói chung chung
+• Khi không chắc: Nói thẳng "Dữ liệu chưa đủ để kết luận"\n\n`;
 
   const modes = {
-    chat: `Mode: TƯ VẤN TỰ DO — Trả lời bất kỳ câu hỏi nào về trading, ICT/SMC, phân tích setup. Đưa ra nhận xét thực tế dựa trên data.`,
-    review: `Mode: REVIEW LỆNH — Phân tích kỹ lưỡng từng lệnh trong lịch sử. Chỉ ra: lệnh nào đúng process dù thua, lệnh nào sai process dù thắng. Tập trung vào pattern sai lầm lặp lại.`,
-    teach: `Mode: GIẢNG DẠY ICT/SMC — Giải thích các khái niệm: Order Block (OB), Fair Value Gap (FVG), Liquidity Sweep, BOS/CHOCH, MSS, Premium/Discount, Killzones. Luôn kèm ví dụ từ setup người dùng đang theo dõi nếu có.`,
-    psych: `Mode: TÂM LÝ TRADING — Phân tích tâm lý từ pattern hành vi: FOMO, revenge trade, overtrading, sợ bỏ lỡ. Hỏi sâu về cảm xúc. Đưa ra bài tập thực hành cụ thể.`,
-    week: `Mode: WEEKLY REVIEW — Tổng kết hiệu suất tuần: setup nào work, setup nào fail, điểm nào cần cải thiện tuần tới. Đưa ra 3 mục tiêu cụ thể cho tuần sau.`
+    chat: `[MODE: TƯ VẤN] Trả lời bất kỳ câu hỏi nào về trading, ICT/SMC, phân tích setup. Khi user hỏi về setup/lệnh→áp dụng SKILL_JOURNAL_RULES để đối chiếu lịch sử. Đưa nhận xét thực tế dựa trên data context.`,
+
+    review: `[MODE: REVIEW LỆNH] Phân tích kỹ từng lệnh theo 4-QUADRANT REVIEW. Áp dụng SKILL_JOURNAL_RULES để xác định: lệnh nào đúng process dù thua, lệnh nào sai process dù thắng. Chỉ ra pattern sai lầm đang lặp lại với số liệu cụ thể. So sánh R:R kế hoạch vs thực tế.`,
+
+    teach: `[MODE: GIẢNG DẠY] Giải thích ICT/SMC từ SKILL_SMC và SKILL_WYCKOFF. Luôn kèm ví dụ thực tế từ setup người dùng đang theo dõi nếu có trong context. Sequence: Định nghĩa→Tại sao tồn tại (logic smart money)→Cách nhận diện→Cách trade→Ví dụ.`,
+
+    psych: `[MODE: TÂM LÝ] Áp dụng SKILL_PSYCH. Phân tích tâm lý từ pattern hành vi trong lịch sử lệnh. Xác định user đang ở trạng thái nào trong 5 trạng thái nguy hiểm. Chạy Pre-Trade Checklist nếu cần. Đưa bài tập thực hành cụ thể.`,
+
+    week: `[MODE: WEEKLY REVIEW] Tổng kết hiệu suất tuần theo framework: Win rate%→R:R thực tế vs kế hoạch→Setup nào work/fail→4-Quadrant analysis→3 mục tiêu cụ thể tuần tới. Áp dụng SKILL_JOURNAL_RULES để phát hiện pattern.`
   };
 
   return base + (modes[mode] || modes.chat);
@@ -2214,34 +2461,36 @@ function setMentorMode(mode, btn) {
   // Update quick buttons based on mode
   const quickBtns = {
     chat: [
-      ['🔍 Review setup', 'Giải thích setup tôi đang theo dõi có hợp lý không?'],
-      ['🎯 Vào lệnh?', 'Với setup hiện tại, tôi nên vào lệnh không?'],
-      ['📐 SL hợp lý?', 'Stop loss tôi đang đặt có hợp lý chưa?'],
-      ['💡 Cải thiện', 'Tôi cần cải thiện điều gì nhất?']
+      ['🔍 Review setup', 'Giải thích setup tôi đang theo dõi có hợp lý không theo framework SMC/Wyckoff?'],
+      ['🎯 Vào lệnh?', 'Dựa trên Pre-Trade Checklist 10 điểm, tôi có đủ điều kiện vào lệnh không?'],
+      ['📐 SL hợp lý?', 'Stop loss tôi đang đặt có hợp lý về mặt kỹ thuật chưa? Có thể đặt tighter hơn không?'],
+      ['💡 Ưu tiên cải thiện', 'Dựa trên data hiện tại, điều gì tôi cần cải thiện nhất để tăng edge?']
     ],
     review: [
-      ['📋 Review tất cả', 'Phân tích toàn bộ lịch sử trade của tôi'],
-      ['❌ Lỗi lặp lại', 'Tôi đang mắc lỗi gì lặp đi lặp lại?'],
-      ['🏆 Setup tốt nhất', 'Setup nào đang cho kết quả tốt nhất?'],
-      ['📉 Setup tệ nhất', 'Setup nào tôi nên dừng lại?']
+      ['📋 Review tất cả', 'Phân tích toàn bộ lịch sử trade theo 4-Quadrant framework. Chỉ ra quadrant nào nhiều nhất?'],
+      ['❌ Lỗi lặp lại', 'Tôi đang mắc lỗi gì lặp đi lặp lại? Phân tích pattern với số liệu cụ thể.'],
+      ['🏆 Setup tốt nhất', 'Setup nào có edge thực sự? So sánh win rate và R:R thực tế theo từng loại.'],
+      ['📉 Cần dừng gì?', 'Setup hoặc habit nào tôi nên dừng ngay dựa trên data? Lý do cụ thể?']
     ],
     teach: [
-      ['📚 OB là gì?', 'Giải thích Order Block và cách nhận diện OB chất lượng cao?'],
-      ['🔷 FVG', 'Fair Value Gap là gì? Khác OB như nào?'],
-      ['💧 Liquidity', 'Liquidity sweep là gì và tại sao market làm vậy?'],
-      ['🔄 BOS/CHOCH', 'Break of Structure và Change of Character - phân biệt và cách dùng?']
+      ['📚 OB chất lượng cao', 'Giải thích Order Block chất lượng cao vs OB thường. Cách phân biệt khi nhìn chart?'],
+      ['🔷 FVG vs OB', 'FVG và OB khác nhau thế nào? Khi nào ưu tiên cái nào? Cho ví dụ setup thực tế.'],
+      ['💧 Liquidity sweep', 'Tại sao smart money cần sweep liquidity? Quy trình từ sweep đến entry chuẩn là gì?'],
+      ['🔄 BOS vs ChoCh', 'Phân biệt BOS và ChoCh. Tại sao ChoCh quan trọng hơn BOS trong việc nhận diện đảo chiều?'],
+      ['📊 Wyckoff Spring', 'Spring trong Wyckoff là gì? Cách nhận diện Spring thật vs fake breakdown?'],
+      ['⛓ On-chain trading', 'Funding rate và Exchange flow ảnh hưởng thế nào đến entry/exit? Cho ví dụ thực tế.']
     ],
     psych: [
-      ['🧘 Check FOMO', 'Tôi có đang FOMO không? Phân tích pattern của tôi'],
-      ['😤 Revenge trade', 'Làm sao biết mình đang revenge trade?'],
-      ['💪 Kỷ luật', 'Tôi cần kỷ luật ở điểm nào nhất dựa trên data?'],
-      ['😰 Sợ vào lệnh', 'Tôi thường do dự trước entry - phải làm sao?']
+      ['🧘 Check FOMO', 'Phân tích pattern trade của tôi: Tôi có dấu hiệu FOMO không? Dữ liệu nào chứng minh?'],
+      ['😤 Revenge trade?', 'Tôi có đang revenge trade không? Kiểm tra pattern sau các lệnh thua.'],
+      ['💪 Kỷ luật yếu nhất', 'Điểm kỷ luật nào tôi vi phạm nhiều nhất? Bài tập cụ thể để fix?'],
+      ['😰 Sợ vào lệnh', 'Tôi thường do dự dù setup rõ ràng. Cách dùng position sizing để xử lý vấn đề này?']
     ],
     week: [
-      ['📅 Weekly review', 'Tổng kết hiệu suất tuần này của tôi'],
-      ['🎯 Mục tiêu', 'Đề xuất 3 mục tiêu cụ thể cho tuần tới'],
-      ['📊 Phân tích lỗi', 'Tuần này tôi mắc lỗi gì?'],
-      ['✅ Kế hoạch', 'Lên kế hoạch giao dịch tuần tới cho tôi']
+      ['📅 Weekly P&L review', 'Tổng kết tuần này theo format: Win rate, R:R thực tế, Setup performance, 4-Quadrant count.'],
+      ['🎯 3 mục tiêu tuần tới', 'Dựa trên điểm yếu đang thấy, đề xuất 3 mục tiêu SMART cụ thể cho tuần tới.'],
+      ['📊 Phân tích lỗi tuần', 'Tuần này tôi mắc lỗi gì? Thuộc nhóm nào trong 5 trạng thái nguy hiểm?'],
+      ['✅ Kế hoạch trade', 'Lên kế hoạch trade tuần tới: Bias cần watch, setup cần focus, rule cần giữ.']
     ]
   };
 
@@ -2262,6 +2511,63 @@ function setMentorMode(mode, btn) {
   }
 }
 
+// ── Update context bar (hiển thị cho user biết AI đang thấy gì) ──
+function updateContextBar() {
+  const closed = trades.filter(t=>t.status==='closed');
+  const open = trades.filter(t=>t.status==='open');
+
+  const elAnalysis = document.getElementById('ctx-analysis');
+  const elOpen = document.getElementById('ctx-open');
+  const elHistory = document.getElementById('ctx-history');
+  const elPrice = document.getElementById('ctx-price');
+  if(!elAnalysis) return;
+
+  if(currentAnalysis && currentAnalysis.bias) {
+    elAnalysis.textContent = `BIAS: ${currentAnalysis.bias}`;
+    elAnalysis.className = 'ctx-tag has';
+  } else {
+    elAnalysis.textContent = 'Chưa có phân tích';
+    elAnalysis.className = 'ctx-tag no';
+  }
+
+  if(open.length) {
+    elOpen.textContent = `${open.length} lệnh đang mở`;
+    elOpen.className = 'ctx-tag has';
+  } else {
+    elOpen.textContent = '0 lệnh mở';
+    elOpen.className = 'ctx-tag no';
+  }
+
+  if(closed.length) {
+    const wr = ((closed.filter(t=>t.result==='win').length/closed.length)*100).toFixed(0);
+    elHistory.textContent = `${closed.length} lệnh · WR${wr}%`;
+    elHistory.className = 'ctx-tag has';
+  } else {
+    elHistory.textContent = '0 lịch sử';
+    elHistory.className = 'ctx-tag no';
+  }
+
+  if(lastPrices[currentAsset]) {
+    elPrice.textContent = `${currentAsset} $${lastPrices[currentAsset]?.toLocaleString()}`;
+    elPrice.className = 'ctx-tag has';
+  } else {
+    elPrice.textContent = 'Chưa có giá live';
+    elPrice.className = 'ctx-tag no';
+  }
+
+  // Journal skill indicator
+  const skJ = document.getElementById('sk-journal');
+  if(skJ) {
+    if(closed.length>=3) {
+      skJ.className = 'skill-chip active';
+      skJ.title = `Journal AI: Phân tích ${closed.length} lệnh · Phát hiện pattern`;
+    } else {
+      skJ.className = 'skill-chip inactive';
+      skJ.title = 'Journal AI: Cần ≥3 lệnh để phân tích pattern';
+    }
+  }
+}
+
 function toggleMentor() {
   mentorOpen ? closeMentor() : openMentor();
 }
@@ -2272,15 +2578,34 @@ function openMentor() {
   document.getElementById('overlay').classList.add('show');
   document.getElementById('fab-badge').classList.remove('show');
   renderMentorMsgs();
+  updateContextBar(); // ← Cập nhật context bar mỗi lần mở
   setTimeout(()=>document.getElementById('mentor-msgs').scrollTop=99999, 100);
 
-  // Auto greet first time with context
+  // Auto greet first time with context — thông minh hơn v3
   if (!mentorGreeted && (!!geminiKey || !!groqKey)) {
     mentorGreeted = true;
-    const hasData = trades.length > 0 || currentAnalysis;
-    if (hasData) {
-      setTimeout(()=>sendMentorMsg('Xin chào! Hãy phân tích nhanh tình hình trading của tôi hiện tại và đưa ra 1 nhận xét quan trọng nhất.'), 500);
+    const closed = trades.filter(t=>t.status==='closed');
+    const open = trades.filter(t=>t.status==='open');
+    const hasAnalysis = !!currentAnalysis;
+
+    let greetMsg = '';
+    if (closed.length >= 3) {
+      // Có đủ lịch sử → review thông minh
+      const wins = closed.filter(t=>t.result==='win').length;
+      const wr = ((wins/closed.length)*100).toFixed(0);
+      greetMsg = `Chào! Tôi vừa đọc toàn bộ context: ${closed.length} lệnh đã đóng (WR ${wr}%), ${open.length} lệnh đang mở${hasAnalysis?`, bias hiện tại ${currentAnalysis.bias}`:''}.
+Áp dụng Skills: Wyckoff + SMC + Risk Management + Psychology để phân tích. Đưa ra nhận xét quan trọng nhất cần cải thiện ngay hôm nay.`;
+    } else if (open.length > 0) {
+      // Có lệnh đang mở → check ngay
+      greetMsg = `Chào! Tôi thấy bạn đang có ${open.length} lệnh mở. Hãy đánh giá các lệnh này dựa trên framework SMC/Wyckoff và cho biết có điểm nào cần chú ý không?`;
+    } else if (hasAnalysis) {
+      // Có phân tích nhưng chưa có lệnh
+      greetMsg = `Chào! Tôi đã đọc phân tích bias ${currentAnalysis.bias}${currentAnalysis.setups?.length ? ` với ${currentAnalysis.setups.length} setup đang theo dõi` : ''}. Đánh giá nhanh: setup nào đang gần vùng entry nhất và điều kiện xác nhận cần gì?`;
+    } else {
+      // Mới vào lần đầu
+      greetMsg = `Chào! Tôi là AI Mentor được tích hợp đầy đủ Skills: Wyckoff, SMC/ICT, On-chain, Macro, Risk Management, Psychology và Journal Analysis. Bắt đầu bằng cách paste phân tích thị trường vào tab "AI Parse" hoặc hỏi tôi bất cứ điều gì về BTC/Trading.`;
     }
+    setTimeout(()=>sendMentorMsg(greetMsg), 600);
   }
 }
 
@@ -2291,7 +2616,6 @@ function closeMentor() {
 }
 
 // ══ AUTO COACH AFTER CLOSE TRADE ══
-// Được gọi từ closeTrade sau khi đóng lệnh thành công
 function autoCoachAfterClose(tradeId) {
   const t = trades.find(x=>x.id===tradeId);
   if (!t || t.status!=='closed') return;
@@ -2299,14 +2623,26 @@ function autoCoachAfterClose(tradeId) {
   const groqOk2 = !!groqKey && !isGroqQuotaOut();
   if (!gemOk2 && !groqOk2) return;
 
-  // Show badge notification
   const badge = document.getElementById('fab-badge');
   badge.textContent = '!';
   badge.classList.add('show');
 
-  // Queue auto-coach message
-  const result = t.result==='win'?'THẮNG':'THUA';
-  const autoMsg = 'Tôi vừa đóng lệnh #'+t.id+' '+t.direction.toUpperCase()+' '+t.asset+': '+result+' '+(t.pnl>0?'+':'')+'$'+Math.abs(t.pnl).toFixed(0)+' (RR thực tế: '+t.rrActual+'). Setup: '+t.setup+'. Lý do vào: "'+((t.reason||'').slice(0,100))+'". '+(t.lesson?'Bài học: '+t.lesson:'')+'. Hãy nhận xét ngắn gọn lệnh này.';
+  // Lấy thêm context: chuỗi thắng/thua hiện tại
+  const closed = trades.filter(x=>x.status==='closed');
+  const sorted = [...closed].reverse();
+  let streak = 0; let streakType = null;
+  for(const x of sorted){
+    if(!streakType){ streakType = x.result; streak=1; }
+    else if(x.result===streakType) streak++;
+    else break;
+  }
+  const streakNote = streak>=2 ? ` Đây là lệnh ${streakType==='win'?'thắng':'thua'} thứ ${streak} liên tiếp.` : '';
+
+  const result = t.result==='win'?'THẮNG ✅':'THUA ❌';
+  const autoMsg = `Vừa đóng #${t.id} ${t.direction.toUpperCase()} ${t.asset}: ${result} ${t.pnl>0?'+':''}$${Math.abs(t.pnl).toFixed(0)} (RR thực tế: ${t.rrActual}).${streakNote}
+Setup: ${t.setup}. Lý do vào: "${(t.reason||'').slice(0,120)}".${t.lesson?' Bài học tự ghi: '+t.lesson:''}
+Dựa trên Skills Wyckoff+SMC+Risk: (1) Quy trình lệnh này đúng hay sai? (2) Thuộc quadrant nào? (3) 1 điều cần cải thiện ngay.`;
+
   setTimeout(function(){
     openMentor();
     mentorMode = 'review';
@@ -2314,15 +2650,6 @@ function autoCoachAfterClose(tradeId) {
     sendMentorMsg(autoMsg);
   }, 800);
 }
-
-// Init mentor quick buttons
-document.getElementById('mentor-quick').innerHTML = [
-  ['🔍 Review setup', 'Giải thích setup tôi đang theo dõi có hợp lý không?'],
-  ['🎯 Vào lệnh?', 'Với setup hiện tại, tôi nên vào lệnh không?'],
-  ['📚 OB là gì?', 'OB là gì và cách nhận diện Order Block chất lượng cao?'],
-  ['🔬 Phân tích lỗi', 'Phân tích lịch sử trade của tôi và chỉ ra sai lầm đang lặp lại'],
-  ['🧘 Check tâm lý', 'Tôi có đang FOMO hoặc revenge trade không?']
-].map(([l,m])=>`<div class="qbtn" onclick="quickAsk('${m.replace(/'/g,"\\'")}')"> ${l}</div>`).join('');
 </script>
 </body>
 </html>

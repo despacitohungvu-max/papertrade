@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>PaperTrade Pro v3</title>
+<title>PaperTrade Pro v4</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
@@ -357,7 +357,7 @@ textarea.inp{resize:none;line-height:1.6;}
 
 <div class="hdr">
   <div class="hdr-inner">
-    <div class="logo">PAPER TRADE<span class="v">v3</span></div>
+    <div class="logo">PAPER TRADE<span class="v">v4</span></div>
     <div class="hdr-nums">
       <div class="hnum">
         <div class="hnum-val" id="h-pnl" style="color:var(--green)">$0</div>
@@ -629,6 +629,12 @@ textarea.inp{resize:none;line-height:1.6;}
 .ctx-tag.has{background:rgba(0,240,160,.1);color:var(--green);border:1px solid rgba(0,240,160,.2);}
 .ctx-tag.no{background:var(--s3);color:var(--muted);border:1px solid var(--border);}
 .ctx-label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.stbtn{padding:8px 6px;border-radius:8px;border:1px solid var(--border2);background:var(--s2);color:var(--muted2);font-family:var(--sans);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;text-align:center;}
+.stbtn:hover{border-color:var(--cyan);color:var(--cyan);}
+.score-seg{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:2px;}
+.score-seg.pass{background:var(--green);}
+.score-seg.fail{background:var(--red);}
+.score-seg.partial{background:var(--gold);}
 </style>
 <div class="mentor-panel" id="mentor-panel">
   <div class="mentor-hd">
@@ -651,6 +657,38 @@ textarea.inp{resize:none;line-height:1.6;}
     <div class="skill-chip active" title="3 Setup chuẩn, Entry Execution"><span class="sc-dot"></span>Execution</div>
     <div class="skill-chip active" title="FOMO, Revenge, 4-Quadrant, Checklist"><span class="sc-dot"></span>Psychology</div>
     <div class="skill-chip active" id="sk-journal" title="Journal pattern analysis"><span class="sc-dot"></span>Journal AI</div>
+    <div class="skill-chip" id="btn-skill-test" onclick="openSkillTest()"
+      style="background:rgba(255,184,0,.1);border-color:rgba(255,184,0,.35);color:var(--gold);cursor:pointer;margin-left:auto;"
+      title="Kiểm tra AI có hiểu skills không">
+      <span class="sc-dot" style="background:var(--gold)"></span>🧪 Test Skills
+    </div>
+  </div>
+
+  <!-- SKILL TEST PANEL -->
+  <div id="skill-test-panel" style="display:none;background:var(--s1);border-bottom:1px solid var(--border);padding:12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <span style="font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:2px;">🧪 KIỂM TRA SKILL AI</span>
+      <span onclick="closeSkillTest()" style="color:var(--muted);cursor:pointer;font-size:13px;">✕</span>
+    </div>
+    <div style="font-size:11px;color:var(--muted2);margin-bottom:10px;line-height:1.5;">
+      Chọn skill để kiểm tra AI có thực sự nắm kiến thức không. AI sẽ trả lời câu hỏi chuẩn và app chấm điểm.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;" id="skill-test-btns">
+      <button class="stbtn" onclick="runSkillTest('wyckoff')">📊 Wyckoff Test</button>
+      <button class="stbtn" onclick="runSkillTest('smc')">🔷 SMC Test</button>
+      <button class="stbtn" onclick="runSkillTest('onchain')">⛓ On-chain Test</button>
+      <button class="stbtn" onclick="runSkillTest('risk')">🛡 Risk Test</button>
+      <button class="stbtn" onclick="runSkillTest('psych')">🧘 Psych Test</button>
+      <button class="stbtn" onclick="runSkillTest('full')" style="border-color:var(--gold);color:var(--gold);">🏆 Full Test</button>
+    </div>
+    <div id="skill-test-result" style="display:none;">
+      <div id="skill-test-loading" style="text-align:center;padding:12px;display:none;">
+        <div class="spinner"></div>
+        <div style="font-size:11px;color:var(--muted2);font-family:var(--mono);margin-top:6px;">AI đang trả lời bài test...</div>
+      </div>
+      <div id="skill-score-bar" style="display:none;margin-bottom:8px;"></div>
+      <div id="skill-test-answer" style="font-size:11px;color:var(--muted2);line-height:1.7;font-family:var(--mono);background:var(--s2);border-radius:8px;padding:10px;max-height:200px;overflow-y:auto;"></div>
+    </div>
   </div>
 
   <!-- CONTEXT BAR — Những gì AI đang thấy từ app -->
@@ -2650,6 +2688,204 @@ Dựa trên Skills Wyckoff+SMC+Risk: (1) Quy trình lệnh này đúng hay sai? 
     sendMentorMsg(autoMsg);
   }, 800);
 }
+// ══════════════════════════════════════════════════════
+// 🧪 SKILL TEST ENGINE — Kiểm tra AI có hiểu skills không
+// ══════════════════════════════════════════════════════
+
+const SKILL_TESTS = {
+  wyckoff: {
+    name: '📊 Wyckoff',
+    question: `Trả lời ngắn gọn 3 câu sau (mỗi câu 1-2 dòng):
+1. Upthrust trong Wyckoff Distribution là gì và tại sao nó nguy hiểm?
+2. Sự khác biệt giữa Spring và SC (Selling Climax)?
+3. Sau khi thấy Sign of Strength (SOS), action tiếp theo nên là gì?`,
+    keywords: [
+      ['upthrust','fake breakout','breakout giả','sweep bsl','bẫy'],
+      ['spring','fake breakdown','sweep ssl','đáy giả','spring','sc','selling climax'],
+      ['sos','buec','back up','retest','chờ pullback','entry']
+    ]
+  },
+  smc: {
+    name: '🔷 SMC',
+    question: `Trả lời ngắn gọn 3 câu sau:
+1. Bullish Order Block là nến gì? Khi nào nó invalid?
+2. FVG fill 50% nghĩa là gì? Tại sao đủ để bounce?
+3. Sự khác biệt giữa BOS và ChoCh — cái nào cảnh báo đảo chiều?`,
+    keywords: [
+      ['nến giảm cuối','last bearish','trước impulse','bos','invalid','mitigate','close bên trong'],
+      ['50%','imbalance','khoảng trống','bóng nến','hấp thụ','equilibrium'],
+      ['choch','change of character','đảo chiều','bos','continuation','tiếp tục']
+    ]
+  },
+  onchain: {
+    name: '⛓ On-chain',
+    question: `Trả lời ngắn gọn 3 câu:
+1. Funding rate > 0.10%/8h có nghĩa gì? Action cần làm khi muốn Long?
+2. Exchange Net Flow âm (outflow) → tín hiệu bullish hay bearish? Tại sao?
+3. MVRV > 3.7 cho thấy điều gì theo lịch sử BTC?`,
+    keywords: [
+      ['overleveraged','long squeeze','giảm size','0.1%','cẩn thận','50%'],
+      ['bullish','holder rút','rút khỏi sàn','không bán','tích lũy','outflow'],
+      ['near top','gần đỉnh','historically','overvalued','cẩn thận thoát','đỉnh cycle']
+    ]
+  },
+  risk: {
+    name: '🛡 Risk Mgmt',
+    question: `Trả lời ngắn gọn 3 câu:
+1. Công thức tính Position Size là gì? Cho ví dụ với vốn $10,000, risk 1%, SL cách $2,000.
+2. Tại sao win rate 40% + RR 1:3 vẫn sinh lời hơn win rate 70% + RR 0.8?
+3. Khi drawdown chạm 20%, rule bắt buộc là gì?`,
+    keywords: [
+      ['vốn','risk%','distance','sl','0.05','100','2000','position size'],
+      ['40%','1:3','toán học','kỳ vọng dương','expected value','long run','sinh lời'],
+      ['giảm size','50%','reduce','drawdown 20%']
+    ]
+  },
+  psych: {
+    name: '🧘 Psychology',
+    question: `Trả lời ngắn gọn 3 câu:
+1. 4-Quadrant Review: "Sai quy trình nhưng thắng" thuộc quadrant nào? Tại sao nguy hiểm?
+2. Sau 2 lệnh thua liên tiếp, rule bắt buộc là gì?
+3. FOMO: Điều kiện nào ngăn không cho vào lệnh chase giá?`,
+    keywords: [
+      ['sai thắng','may mắn','nguy hiểm','reinforces','quy trình sai','luck','quadrant'],
+      ['đóng máy','2 giờ','dừng','2 lệnh thua','stop trading'],
+      ['50%','move xa','đã di chuyển','chase','không vào','setup point']
+    ]
+  },
+  full: {
+    name: '🏆 Full Test',
+    question: `Đây là bài test kiến thức toàn diện. Trả lời ngắn gọn mỗi câu:
+1. [Wyckoff] Upthrust khác Spring thế nào?
+2. [SMC] Bullish OB + FVG cùng vùng → độ ưu tiên cao hơn không? Tại sao?
+3. [On-chain] Giá tăng nhưng Funding Rate thấp → giải thích ý nghĩa.
+4. [Risk] Win rate 35%, RR 1:3 → có sinh lời không? Tính nhanh.
+5. [Psych] Trader vừa thắng 3 lệnh liên tiếp, muốn tăng size gấp đôi → đang ở trạng thái tâm lý nào?`,
+    keywords: [
+      ['upthrust','distribution','spring','accumulation','fake breakout','fake breakdown'],
+      ['hội tụ','confluence','high probability','xác suất cao','ưu tiên','kết hợp'],
+      ['spot driven','spot-driven','không leverage','bền vững','organic','thực chất'],
+      ['sinh lời','profitable','35','1:3','35x3','105','65','dương'],
+      ['overconfidence','tự tin thái quá','sau chuỗi thắng','size không thay đổi']
+    ]
+  }
+};
+
+function openSkillTest() {
+  const panel = document.getElementById('skill-test-panel');
+  const result = document.getElementById('skill-test-result');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  if(result) { result.style.display='none'; }
+}
+
+function closeSkillTest() {
+  document.getElementById('skill-test-panel').style.display = 'none';
+}
+
+async function runSkillTest(skillKey) {
+  const gemOk = !!geminiKey && !isGeminiQuotaOut();
+  const groqOk = !!groqKey && !isGroqQuotaOut();
+  if(!gemOk && !groqOk) {
+    showToast('⚠️ Cần API key để test AI');
+    return;
+  }
+
+  const test = SKILL_TESTS[skillKey];
+  if(!test) return;
+
+  // UI loading
+  const resultEl = document.getElementById('skill-test-result');
+  const loadingEl = document.getElementById('skill-test-loading');
+  const scoreEl = document.getElementById('skill-score-bar');
+  const answerEl = document.getElementById('skill-test-answer');
+  resultEl.style.display = 'block';
+  loadingEl.style.display = 'block';
+  scoreEl.style.display = 'none';
+  answerEl.textContent = '';
+
+  // Disable buttons
+  document.querySelectorAll('.stbtn').forEach(b=>{ b.disabled=true; b.style.opacity='.5'; });
+
+  // Gọi AI với system prompt đầy đủ (đúng skills)
+  const systemPrompt = buildMentorSystem('chat');
+  const testPrompt = `${test.question}
+
+[Lưu ý: Đây là bài kiểm tra kiến thức. Trả lời chính xác, súc tích, có số liệu cụ thể. Không cần nhắc đến context app.]`;
+
+  try {
+    let answer = '';
+
+    if(gemOk) {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+        { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            contents:[{role:'user', parts:[{text: systemPrompt + '\n\n' + testPrompt}]}],
+            generationConfig:{temperature:0.3, maxOutputTokens:500}
+          })
+        }
+      );
+      if(res.status===429) throw Object.assign(new Error('QUOTA'),{provider:'gemini'});
+      const data = await res.json();
+      answer = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if(!answer) throw new Error('empty');
+    } else {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${groqKey}`},
+        body: JSON.stringify({
+          model:'llama-3.3-70b-versatile', temperature:0.3, max_tokens:500,
+          messages:[
+            {role:'system', content: systemPrompt},
+            {role:'user', content: testPrompt}
+          ]
+        })
+      });
+      const data = await res.json();
+      answer = data?.choices?.[0]?.message?.content || '';
+    }
+
+    loadingEl.style.display = 'none';
+
+    // Chấm điểm — kiểm tra keyword coverage
+    const answerLower = answer.toLowerCase();
+    const scores = test.keywords.map(kwGroup => {
+      const hit = kwGroup.some(kw => answerLower.includes(kw.toLowerCase()));
+      return hit;
+    });
+    const passed = scores.filter(Boolean).length;
+    const total = scores.length;
+    const pct = Math.round(passed/total*100);
+
+    // Render score bar
+    const grade = pct>=80?'✅ PASS':pct>=60?'⚠️ PARTIAL':'❌ FAIL';
+    const gradeColor = pct>=80?'var(--green)':pct>=60?'var(--gold)':'var(--red)';
+    const segs = scores.map((s,i)=>
+      `<span class="score-seg ${s?'pass':'fail'}" title="Câu ${i+1}: ${s?'✅ Đúng':'❌ Thiếu'}"></span>`
+    ).join('');
+
+    scoreEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--s2);border-radius:8px;">
+        <span style="font-family:var(--mono);font-size:13px;font-weight:700;color:${gradeColor}">${grade}</span>
+        <span style="font-family:var(--mono);font-size:11px;color:${gradeColor}">${passed}/${total} câu đúng (${pct}%)</span>
+        <span style="margin-left:auto;display:flex;gap:2px;align-items:center;">${segs}</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px;padding:0 4px;">
+        ${pct>=80?'🧠 AI nắm vững skills — phản hồi có cơ sở':pct>=60?'⚠️ AI hiểu cơ bản nhưng thiếu một số chi tiết':'❌ AI chưa áp dụng đúng skills — kiểm tra API key và system prompt'}
+      </div>`;
+    scoreEl.style.display = 'block';
+
+    // Render answer với highlight
+    answerEl.textContent = answer;
+
+  } catch(e) {
+    loadingEl.style.display = 'none';
+    answerEl.textContent = `❌ Lỗi: ${e.message}. Kiểm tra API key.`;
+    resultEl.style.display = 'block';
+  }
+
+  document.querySelectorAll('.stbtn').forEach(b=>{ b.disabled=false; b.style.opacity='1'; });
+}
+
 </script>
 </body>
 </html>

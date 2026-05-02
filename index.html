@@ -351,6 +351,60 @@ textarea.inp{resize:none;line-height:1.6;}
 .coach-body strong{color:var(--text);}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:none;}
 .overlay.show{display:block;}
+
+/* ══ MULTI-AGENT ══ */
+.ma-panel{background:var(--s1);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:14px;display:none;animation:fadeUp .3s ease both;}
+.ma-panel.show{display:block;}
+.ma-hd{font-family:var(--mono);font-size:9px;color:var(--purple);letter-spacing:2px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.ma-hd::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(155,109,255,.4),transparent);}
+.ma-agents{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+.ma-agent{background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:14px;transition:border-color .4s,background .4s;}
+.ma-agent.loading{opacity:.65;}
+.ma-agent.done-long{border-color:rgba(0,240,160,.35);background:rgba(0,240,160,.03);}
+.ma-agent.done-short{border-color:rgba(255,61,107,.3);background:rgba(255,61,107,.03);}
+.ma-agent.done-hold{border-color:rgba(255,184,0,.3);background:rgba(255,184,0,.02);}
+.ma-agent-hd{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+.ma-agent-ico{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.ma-agent-ico.tech{background:rgba(45,156,255,.15);border:1px solid rgba(45,156,255,.3);}
+.ma-agent-ico.risk{background:rgba(255,184,0,.12);border:1px solid rgba(255,184,0,.3);}
+.ma-agent-ico.trader{background:rgba(155,109,255,.15);border:1px solid rgba(155,109,255,.3);}
+.ma-agent-info{flex:1;}
+.ma-agent-name{font-size:12px;font-weight:700;}
+.ma-agent-name.tech{color:var(--blue);}
+.ma-agent-name.risk{color:var(--gold);}
+.ma-agent-name.trader{color:var(--purple);}
+.ma-agent-role{font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:1px;}
+.ma-verdict{font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;display:none;}
+.ma-verdict.long{background:var(--green2);color:var(--green);border:1px solid rgba(0,240,160,.3);display:inline-block;}
+.ma-verdict.short{background:var(--red2);color:var(--red);border:1px solid rgba(255,61,107,.2);display:inline-block;}
+.ma-verdict.hold{background:var(--gold2);color:var(--gold);border:1px solid rgba(255,184,0,.25);display:inline-block;}
+.ma-agent-body{font-size:11px;color:var(--muted2);line-height:1.7;font-family:var(--mono);}
+.ma-key-pts{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
+.ma-pt{display:flex;align-items:baseline;gap:5px;font-size:10px;color:var(--muted2);}
+.ma-pt::before{content:'▸';color:var(--purple);flex-shrink:0;}
+.ma-mini-spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border2);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px;}
+.ma-mini-spin.blue{border-top-color:var(--blue);}
+.ma-mini-spin.gold{border-top-color:var(--gold);}
+.ma-mini-spin.purple{border-top-color:var(--purple);}
+.ma-final{background:linear-gradient(135deg,rgba(0,240,160,.07),rgba(45,156,255,.04));border:1px solid rgba(0,240,160,.35);border-radius:14px;padding:18px;margin-top:14px;display:none;}
+.ma-final.show{display:block;animation:fadeUp .4s ease both;}
+.ma-final-hd{font-family:var(--mono);font-size:9px;color:var(--green);letter-spacing:2px;margin-bottom:12px;}
+.ma-final-row{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+.ma-final-v{font-size:28px;font-weight:700;}
+.ma-final-v.long{color:var(--green);}
+.ma-final-v.short{color:var(--red);}
+.ma-final-v.hold{color:var(--gold);}
+.ma-final-conf{font-family:var(--mono);font-size:11px;color:var(--muted2);}
+.ma-conf-bar{height:5px;background:var(--s3);border-radius:3px;overflow:hidden;margin:8px 0 12px;}
+.ma-conf-fill{height:100%;border-radius:3px;transition:width 1.2s ease;}
+.ma-conf-fill.long{background:linear-gradient(90deg,var(--green),#00c87a);}
+.ma-conf-fill.short{background:linear-gradient(90deg,var(--red),#ff6b8a);}
+.ma-conf-fill.hold{background:linear-gradient(90deg,var(--gold),#ffd44d);}
+.ma-final-txt{font-size:11px;color:var(--muted2);line-height:1.75;font-family:var(--mono);}
+.ma-warning{margin-top:10px;padding:8px 12px;background:rgba(255,184,0,.08);border:1px solid rgba(255,184,0,.25);border-radius:8px;font-size:10px;color:var(--gold);font-family:var(--mono);line-height:1.5;}
+.btn-ma{width:100%;padding:13px;border-radius:11px;border:none;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#6b21a8,#9b6dff);color:#fff;margin-top:12px;transition:all .15s;letter-spacing:.3px;}
+.btn-ma:active{transform:scale(.97);}
+.btn-ma:disabled{opacity:.5;cursor:not-allowed;}
 </style>
 </head>
 <body>
@@ -477,7 +531,61 @@ textarea.inp{resize:none;line-height:1.6;}
         <div class="pr-title">BIAS & CONTEXT</div>
         <div id="meta-content" style="font-size:12px;color:var(--muted2);line-height:1.7;font-family:var(--mono);"></div>
       </div>
+      <button class="btn-ma" id="btn-multi-agent" onclick="runMultiAgent()" style="margin-top:14px;">
+        🤖 Chạy Multi-Agent Analysis
+      </button>
     </div>
+
+    <!-- ══ MULTI-AGENT PANEL ══ -->
+    <div class="ma-panel" id="ma-panel">
+      <div class="ma-hd">⚡ MULTI-AGENT ANALYSIS</div>
+      <div class="ma-agents">
+        <div class="ma-agent loading" id="ma-tech">
+          <div class="ma-agent-hd">
+            <div class="ma-agent-ico tech">🔵</div>
+            <div class="ma-agent-info">
+              <div class="ma-agent-name tech">Technical Analyst</div>
+              <div class="ma-agent-role">Xu hướng · RSI · EMA · Key Levels</div>
+            </div>
+            <div class="ma-verdict" id="ma-tech-verdict"></div>
+          </div>
+          <div class="ma-agent-body" id="ma-tech-body"><span class="ma-mini-spin blue"></span> Đang đọc tín hiệu...</div>
+        </div>
+        <div class="ma-agent loading" id="ma-risk">
+          <div class="ma-agent-hd">
+            <div class="ma-agent-ico risk">🛡️</div>
+            <div class="ma-agent-info">
+              <div class="ma-agent-name risk">Risk Manager</div>
+              <div class="ma-agent-role">Rủi ro · Position size · R:R · SL</div>
+            </div>
+            <div class="ma-verdict" id="ma-risk-verdict"></div>
+          </div>
+          <div class="ma-agent-body" id="ma-risk-body"><span class="ma-mini-spin gold"></span> Đang đánh giá rủi ro...</div>
+        </div>
+        <div class="ma-agent loading" id="ma-trader">
+          <div class="ma-agent-hd">
+            <div class="ma-agent-ico trader">🎯</div>
+            <div class="ma-agent-info">
+              <div class="ma-agent-name trader">Trader Decision</div>
+              <div class="ma-agent-role">Tổng hợp · Quyết định · Hành động</div>
+            </div>
+            <div class="ma-verdict" id="ma-trader-verdict"></div>
+          </div>
+          <div class="ma-agent-body" id="ma-trader-body"><span class="ma-mini-spin purple" style="opacity:.4;"></span> Chờ 2 agents...</div>
+        </div>
+      </div>
+      <div class="ma-final" id="ma-final">
+        <div class="ma-final-hd">📋 PHÁN QUYẾT CUỐI CÙNG</div>
+        <div class="ma-final-row">
+          <div class="ma-final-v" id="ma-final-v"></div>
+          <div class="ma-final-conf" id="ma-final-conf"></div>
+        </div>
+        <div class="ma-conf-bar"><div class="ma-conf-fill" id="ma-conf-fill" style="width:0%"></div></div>
+        <div class="ma-final-txt" id="ma-final-txt"></div>
+        <div class="ma-warning" id="ma-warning" style="display:none;"></div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ══ PRICE CHECK ══ -->
@@ -2780,6 +2888,243 @@ function openSkillTest() {
 
 function closeSkillTest() {
   document.getElementById('skill-test-panel').style.display = 'none';
+}
+
+// ══════════════════════════════════════════════════
+// 🤖 MULTI-AGENT ANALYSIS — TradingAgents Style
+// ══════════════════════════════════════════════════
+
+// Generic AI caller — Gemini → Groq fallback, returns parsed JSON
+async function callAgentAI(prompt) {
+  const gemOk = !!geminiKey && !isGeminiQuotaOut();
+  const groqOk = !!groqKey && !isGroqQuotaOut();
+
+  if (gemOk) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+        { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ contents:[{parts:[{text: prompt}]}], generationConfig:{temperature:0.2, maxOutputTokens:600} }) }
+      );
+      if (res.status === 429) { markGeminiQuota(); throw new Error('QUOTA_GEMINI'); }
+      const data = await res.json();
+      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      return JSON.parse(raw.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim());
+    } catch(e) {
+      if (!e.message.includes('QUOTA') && groqOk) { /* fallthrough */ }
+      else if (e.message.includes('QUOTA') && groqOk) { /* fallthrough */ }
+      else throw e;
+    }
+  }
+
+  if (groqOk) {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions',
+      { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey},
+        body: JSON.stringify({ model:'llama-3.3-70b-versatile', messages:[{role:'user', content: prompt}], temperature:0.2, max_tokens:600 }) }
+    );
+    if (res.status === 429) { markGroqQuota(); throw new Error('Hết quota cả 2 providers'); }
+    const data = await res.json();
+    const raw = data?.choices?.[0]?.message?.content || '';
+    return JSON.parse(raw.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim());
+  }
+
+  throw new Error('Cần ít nhất 1 API key (Gemini hoặc Groq)');
+}
+
+// ── Prompt builders ──
+function buildTechPrompt(analysisText, setupsJson) {
+  return `Bạn là Technical Analyst chuyên BTC/crypto. Đọc bản phân tích thị trường sau và đưa ra đánh giá kỹ thuật.
+
+Phân tích thị trường:
+"""
+${analysisText.slice(0,3000)}
+"""
+
+Setup đã nhận diện (JSON):
+${JSON.stringify(setupsJson).slice(0,500)}
+
+Trả về JSON DUY NHẤT, không markdown, không backtick:
+{"verdict":"LONG","confidence":72,"summary":"2-3 câu tóm tắt xu hướng kỹ thuật, key level quan trọng, tín hiệu entry tốt nhất","key_points":["Điểm kỹ thuật 1","Điểm kỹ thuật 2","Điểm kỹ thuật 3"]}
+
+verdict chỉ là: LONG / SHORT / HOLD. confidence là 0-100. key_points là mảng 3 chuỗi tiếng Việt.`;
+}
+
+function buildRiskPrompt(analysisText, setupsJson) {
+  return `Bạn là Risk Manager chuyên crypto trading. Đánh giá rủi ro của các setup trong phân tích này.
+
+Phân tích thị trường:
+"""
+${analysisText.slice(0,2000)}
+"""
+
+Setup đã nhận diện:
+${JSON.stringify(setupsJson).slice(0,500)}
+
+Đánh giá: R:R của setup có hợp lý không, SL đặt đúng chỗ không, thị trường có đủ điều kiện để vào lệnh không, risk tối đa nên là bao nhiêu %.
+
+Trả về JSON DUY NHẤT, không markdown, không backtick:
+{"verdict":"LONG","confidence":68,"summary":"2-3 câu đánh giá rủi ro tổng thể, R:R, điều kiện thị trường","key_points":["Điểm rủi ro 1","Điểm rủi ro 2","Điểm rủi ro 3"],"max_risk_pct":1}
+
+verdict: LONG / SHORT / HOLD (dựa trên R:R và rủi ro). confidence 0-100. max_risk_pct là % vốn tối đa nên risk.`;
+}
+
+function buildTraderPrompt(techResult, riskResult, analysisText) {
+  return `Bạn là Trader quyết định cuối cùng. Dựa trên ý kiến từ 2 agents, đưa ra quyết định giao dịch cuối cùng.
+
+📊 Technical Analyst:
+Verdict: ${techResult.verdict} (Confidence: ${techResult.confidence}%)
+${techResult.summary}
+Key points: ${techResult.key_points?.join(' | ')}
+
+🛡️ Risk Manager:
+Verdict: ${riskResult.verdict} (Confidence: ${riskResult.confidence}%)
+${riskResult.summary}
+Max risk: ${riskResult.max_risk_pct}%
+Key points: ${riskResult.key_points?.join(' | ')}
+
+Context ngắn từ phân tích gốc:
+"""
+${analysisText.slice(0,1000)}
+"""
+
+Dựa trên 2 agents trên: nếu cả 2 đồng thuận → verdict đó; nếu trái chiều → HOLD hoặc verdict của Risk Manager. Đưa ra action cụ thể, thực tế.
+
+Trả về JSON DUY NHẤT, không markdown, không backtick:
+{"verdict":"LONG","confidence":75,"reasoning":"2-3 câu lý giải tổng hợp từ cả 2 agents","action":"Hành động cụ thể: ví dụ Chờ giá về $X → vào SHORT với SL $Y TP $Z","warning":"Cảnh báo nếu có hoặc để trống"}
+
+verdict: LONG / SHORT / HOLD. confidence 0-100.`;
+}
+
+// ── Render helpers ──
+function renderAgentCard(agentId, result) {
+  const card = document.getElementById('ma-' + agentId);
+  const bodyEl = document.getElementById('ma-' + agentId + '-body');
+  const verdictEl = document.getElementById('ma-' + agentId + '-verdict');
+
+  const v = (result.verdict || 'HOLD').toUpperCase();
+  const cls = v === 'LONG' ? 'long' : v === 'SHORT' ? 'short' : 'hold';
+
+  card.className = 'ma-agent done-' + cls;
+  verdictEl.className = 'ma-verdict ' + cls;
+  verdictEl.textContent = v === 'LONG' ? '📈 LONG' : v === 'SHORT' ? '📉 SHORT' : '⏸ HOLD';
+
+  const pts = (result.key_points || []).map(p => `<div class="ma-pt">${p}</div>`).join('');
+  bodyEl.innerHTML = `<div style="margin-bottom:6px;">${result.summary || ''}</div>
+    <div class="ma-key-pts">${pts}</div>
+    <div style="margin-top:6px;font-size:9px;color:var(--muted);font-family:var(--mono);">Confidence: ${result.confidence || '?'}%${result.max_risk_pct ? ' · Max risk: ' + result.max_risk_pct + '%' : ''}</div>`;
+}
+
+function renderFinalVerdict(result) {
+  const finalEl = document.getElementById('ma-final');
+  const vEl = document.getElementById('ma-final-v');
+  const confEl = document.getElementById('ma-final-conf');
+  const fillEl = document.getElementById('ma-conf-fill');
+  const txtEl = document.getElementById('ma-final-txt');
+  const warnEl = document.getElementById('ma-warning');
+
+  const v = (result.verdict || 'HOLD').toUpperCase();
+  const cls = v === 'LONG' ? 'long' : v === 'SHORT' ? 'short' : 'hold';
+  const emoji = v === 'LONG' ? '📈' : v === 'SHORT' ? '📉' : '⏸';
+  const conf = result.confidence || 0;
+
+  vEl.className = 'ma-final-v ' + cls;
+  vEl.textContent = emoji + ' ' + v;
+  confEl.textContent = `Độ tin cậy: ${conf}%`;
+  fillEl.className = 'ma-conf-fill ' + cls;
+  setTimeout(() => { fillEl.style.width = conf + '%'; }, 100);
+
+  txtEl.innerHTML = `<b style="color:var(--text);">Lý do:</b> ${result.reasoning || ''}<br><br><b style="color:var(--text);">Hành động:</b> ${result.action || ''}`;
+
+  if (result.warning && result.warning.trim()) {
+    warnEl.textContent = '⚠️ ' + result.warning;
+    warnEl.style.display = 'block';
+  } else {
+    warnEl.style.display = 'none';
+  }
+
+  finalEl.classList.add('show');
+}
+
+// ── Main orchestrator ──
+async function runMultiAgent() {
+  if (!currentAnalysis) {
+    showToast('⚠️ Paste phân tích và bấm Phân tích trước');
+    return;
+  }
+  const gemOk = !!geminiKey && !isGeminiQuotaOut();
+  const groqOk = !!groqKey && !isGroqQuotaOut();
+  if (!gemOk && !groqOk) {
+    showToast('⚠️ Cần API key để chạy Multi-Agent');
+    return;
+  }
+
+  const btn = document.getElementById('btn-multi-agent');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang chạy Multi-Agent...';
+
+  // Show panel, reset state
+  const panel = document.getElementById('ma-panel');
+  panel.classList.add('show');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Reset agent cards
+  ['tech','risk','trader'].forEach(id => {
+    const card = document.getElementById('ma-' + id);
+    const body = document.getElementById('ma-' + id + '-body');
+    const verdict = document.getElementById('ma-' + id + '-verdict');
+    card.className = 'ma-agent loading';
+    verdict.className = 'ma-verdict';
+    verdict.textContent = '';
+  });
+  document.getElementById('ma-tech-body').innerHTML = '<span class="ma-mini-spin blue"></span> Đang đọc tín hiệu kỹ thuật...';
+  document.getElementById('ma-risk-body').innerHTML  = '<span class="ma-mini-spin gold"></span> Đang đánh giá rủi ro...';
+  document.getElementById('ma-trader-body').innerHTML = '<span class="ma-mini-spin purple" style="opacity:.4;"></span> Chờ 2 agents...';
+  document.getElementById('ma-final').classList.remove('show');
+
+  const rawText = currentAnalysis.raw || '';
+  const setups  = currentAnalysis.setups || [];
+
+  try {
+    // Step 1: Run Tech + Risk in parallel
+    const [techRes, riskRes] = await Promise.allSettled([
+      callAgentAI(buildTechPrompt(rawText, setups)),
+      callAgentAI(buildRiskPrompt(rawText, setups))
+    ]);
+
+    // Render Tech
+    if (techRes.status === 'fulfilled') {
+      renderAgentCard('tech', techRes.value);
+    } else {
+      document.getElementById('ma-tech').className = 'ma-agent';
+      document.getElementById('ma-tech-body').textContent = '❌ Lỗi: ' + techRes.reason?.message;
+    }
+
+    // Render Risk
+    if (riskRes.status === 'fulfilled') {
+      renderAgentCard('risk', riskRes.value);
+    } else {
+      document.getElementById('ma-risk').className = 'ma-agent';
+      document.getElementById('ma-risk-body').textContent = '❌ Lỗi: ' + riskRes.reason?.message;
+    }
+
+    // Step 2: Trader agent — uses results from step 1
+    document.getElementById('ma-trader-body').innerHTML = '<span class="ma-mini-spin purple"></span> Tổng hợp và ra quyết định...';
+
+    const techData  = techRes.status  === 'fulfilled' ? techRes.value  : { verdict:'HOLD', confidence:50, summary:'Không có dữ liệu', key_points:[] };
+    const riskData  = riskRes.status  === 'fulfilled' ? riskRes.value  : { verdict:'HOLD', confidence:50, summary:'Không có dữ liệu', key_points:[], max_risk_pct:1 };
+
+    const traderResult = await callAgentAI(buildTraderPrompt(techData, riskData, rawText));
+    renderAgentCard('trader', { ...traderResult, summary: traderResult.reasoning, key_points: [traderResult.action] });
+    renderFinalVerdict(traderResult);
+
+    showToast('✅ Multi-Agent hoàn thành!');
+
+  } catch(e) {
+    showToast('❌ ' + e.message.slice(0,60));
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🔄 Chạy lại Multi-Agent';
 }
 
 async function runSkillTest(skillKey) {
